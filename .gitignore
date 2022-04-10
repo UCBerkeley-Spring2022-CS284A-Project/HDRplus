@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# CMake
+build/
+
+# MacOS / Linux
+.DS_Store
