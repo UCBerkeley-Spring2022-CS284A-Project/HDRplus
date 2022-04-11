@@ -4,5 +4,10 @@
 
 namespace hdrplus
 {
-    
+
+class finish
+{
+
+};
+
 } // namespace hdrplus

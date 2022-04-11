@@ -36,3 +36,6 @@ build/
 
 # MacOS / Linux
 .DS_Store
+
+# Example
+bin/demo

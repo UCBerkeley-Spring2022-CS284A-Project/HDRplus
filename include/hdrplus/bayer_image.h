@@ -4,5 +4,10 @@
 
 namespace hdrplus
 {
+
+class bayer_image
+{
     
+};
+
 } // namespace hdrplus

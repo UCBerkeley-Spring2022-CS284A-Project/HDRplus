@@ -4,5 +4,10 @@
 
 namespace hdrplus
 {
-    
+
+class merge
+{
+
+};
+
 } // namespace hdrplus

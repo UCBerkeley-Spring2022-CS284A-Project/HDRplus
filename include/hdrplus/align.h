@@ -4,5 +4,10 @@
 
 namespace hdrplus
 {
-    
+
+class align
+{
+
+};
+
 } // namespace hdrplus

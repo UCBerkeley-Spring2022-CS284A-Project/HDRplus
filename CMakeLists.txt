@@ -4,9 +4,13 @@ cmake_minimum_required(VERSION 3.0)
 project(hdrplus)
 
 # set c++ standard
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -march=native -O3")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -march=native -O3")
+
+# Default build with release
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 # Arm / X86 optimize flag
 if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm*")
@@ -26,8 +30,27 @@ endif()
 
 # dependency opencv
 find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS})
+include_directories( BEFORE ${OpenCV_INCLUDE_DIRS})
 
-# executable
-add_executable( demo bin/demo.cpp )
-target_link_libraries( demo ${OpenCV_LIBS} )
+# library
+include_directories( 
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include )
+
+add_library(${PROJECT_NAME} SHARED 
+  src/align.cpp
+  src/bayer_image.cpp
+  src/burst.cpp
+  src/finish.cpp
+  src/hdrplus_pipeline.cpp
+  src/merge.cpp )
+
+target_link_libraries(${PROJECT_NAME} 
+  ${OpenCV_LIBS})
+
+# example
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )
+
+add_executable( demo 
+  bin/demo.cpp )
+target_link_libraries( demo ${PROJECT_NAME} )
