@@ -1,1 +1,0 @@
-#include "hdrplus/hdrplus.h"
