@@ -61,3 +61,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests )
 add_executable( test_bayer_image 
   tests/test_bayer_image.cpp )
 target_link_libraries( test_bayer_image ${PROJECT_NAME} )
+
+add_executable( test_utility 
+  tests/test_utility.cpp )
+target_link_libraries( test_utility 
+  ${OpenCV_LIBS} 
+  ${PROJECT_NAME} )

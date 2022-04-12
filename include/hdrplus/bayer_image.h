@@ -14,9 +14,11 @@ class bayer_image
         ~bayer_image();
 
         LibRaw libraw_processor;
-        cv::Mat image;
+        cv::Mat raw_image;
+        cv::Mat grayscale_image;
         size_t width;
         size_t height;
+        size_t white_level;
 };
 
 } // namespace hdrplus

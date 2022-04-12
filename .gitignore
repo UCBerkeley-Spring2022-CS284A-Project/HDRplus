@@ -48,3 +48,4 @@ dataset/
 
 # Unit test
 tests/test_bayer_image
+tests/test_utility
