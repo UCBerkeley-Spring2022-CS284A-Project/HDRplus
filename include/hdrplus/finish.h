@@ -7,7 +7,8 @@ namespace hdrplus
 
 class finish
 {
-
+    public:
+        finish() = default;
 };
 
 } // namespace hdrplus

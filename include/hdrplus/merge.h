@@ -7,7 +7,8 @@ namespace hdrplus
 
 class merge
 {
-
+    public:
+        merge() = default;
 };
 
 } // namespace hdrplus

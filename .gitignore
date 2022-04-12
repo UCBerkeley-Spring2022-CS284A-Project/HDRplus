@@ -39,3 +39,12 @@ build/
 
 # Example
 bin/demo
+
+# external
+external/
+
+# Local dataset
+dataset/
+
+# Unit test
+tests/test_bayer_image
