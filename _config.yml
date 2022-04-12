@@ -1,4 +1,4 @@
-title: UC Berkeley Spring 2022 CS184/284A Final Project - HDR Plus
+title: HDR Plus - CS184/284A Final Project
 domain: ucberkeley-spring2022-cs284a-project.github.io
 url: https://ucberkeley-spring2022-cs284a-project.github.io/HDRplus/
 
@@ -20,4 +20,4 @@ sass:
 
 nav:
  - name: "Proposal"
-   link: "/"
+   link: "/HDRplus/"
