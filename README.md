@@ -19,17 +19,23 @@ Why it is important: Smartphones have limited camera hardware, making computatio
 2. Goals and Deliverables
 
 (1) Deliverable / Goal: A complete HDR pipeline that takes a burst of bayer raw image, and outputs a denoised HDR image. 
+
 (2) Future work: modify the HDR+ algorithm a little to enable RGB input support. So that user can use our pipeline with their own burst of RGB input. The initial algorithm is designed to take raw bayer images as input. In order to use RGB as input, we need to make some modifications to the pipeline. 
+
 (3) Measure Performance: compare HDR image produced by our pipeline with raw bayer image converted to RGB directly. Compare our HDR image result with the result given in the HDR+ paper \cite{hdr+}. 
 
 
 3. Schedule
-(1) First two week: working on the coding part. Xiao work on the 
+
+(1) First two week: working on the coding part. 
+
 (2) Third week: debugging the code and validating functionality.
+
 (3) Fourth week : run experiment & write report. 
 
 
 4. Resources
+
 (1) related works
 Burst photography for high dynamic range and low-light imaging on mobile cameras
 An Analysis and Implementation of the HDR+ Burst Denoising Method
