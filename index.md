@@ -18,6 +18,7 @@ Siming Liu ([liusm220036@berkeley.edu](mailto:liusm220036@berkeley.edu))
 
 
 <img src="img/pipeline.png">
+
 ---
 
 ## Problem Description
