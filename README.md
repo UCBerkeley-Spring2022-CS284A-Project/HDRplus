@@ -11,7 +11,7 @@ Summary: Taking multi-shot / burst sequences of images as input, we aim to imple
 
 1. Problem Description
 
-1) main idea: We take the HDR+ paper as reference and try to implement the generation pipeline in C++, with emphasis on the denoising algorithm. 
+(1) main idea: We take the HDR+ paper as reference and try to implement the generation pipeline in C++, with emphasis on the denoising algorithm. 
 Why it is important: Smartphones have limited camera hardware, making computational photography an important part of smartphones. Taking photos on smartphones can result in parts of the image being too bright or too dark given the limited range. HDR+ allows us to create an image that has a higher amount of visual detail in more lighting conditions.
 
 2) Where it is challenging: The HDR pipeline is composed of multiple steps, which make it a time consuming process. Balancing the quality of each step and the runtime speed for each part is a challenging task. Part of the generation process requires hardware (camera) experiment data for tuning, which could also be time consuming and hardware dependent. 
