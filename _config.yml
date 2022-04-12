@@ -1,0 +1,23 @@
+title: UC Berkeley Spring 2022 CS184/284A Final Project - HDR Plus
+domain: ucberkeley-spring2022-cs284a-project.github.io
+url: https://ucberkeley-spring2022-cs284a-project.github.io/HDRplus/
+
+favicon: true
+favicon_location: "./favicon.ico?" 
+
+markdown: kramdown
+#ins_logo: "./bits-logo.png"
+
+tracking_id: #
+
+footer: yes
+footer_url: "https://github.com/UCBerkeley-Spring2022-CS284A-Project/HDRplus/"
+footer_text: "2022 CS184/284A HDR plus team. Website made by Haohua Lyu. Website template forked from Ankit Sultana."
+
+sass:
+    style: compressed
+    sass_dir: _sass
+
+nav:
+ - name: "Proposal"
+   link: "/"
