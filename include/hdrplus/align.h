@@ -12,7 +12,17 @@ class align
 {
     public:
         align() = default;
-        void process( hdrplus::burst& burst_images, \
+        ~align() = default;
+
+        /**
+         * @brief Run alignment on burst of images
+         * 
+         * @param burst_images collection of burst images
+         * @param aligements alignment in pixel value pair. 
+         *      Outer most vector is per alternative image.
+         *      Inner most two vector is for horizontle & verticle tiles 
+         */
+        void process( const hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& aligements );
 
         const std::vector<int> inv_scale_factors = { 1, 2, 2, 4 };

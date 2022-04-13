@@ -19,7 +19,11 @@ class burst
         int reference_image_idx;
         std::vector<std::string> bayer_image_paths;
 
+        // Source bayer images & grayscale unpadded image
         std::vector<hdrplus::bayer_image> bayer_images;
+
+        // Image padded to tile size
+        // Use for alignment, merging, and finishing
         std::vector<cv::Mat> grayscale_images_pad;
 
 };
