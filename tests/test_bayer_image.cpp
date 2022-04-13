@@ -11,5 +11,11 @@ int main( int argc, char** argv )
 
     hdrplus::bayer_image raw_bayer_image( argv[1] );
 
-    printf("Image of shape h=%d w=%d\n", raw_bayer_image.height, raw_bayer_image.width );
+    printf("Raw image of shape h=%d w=%d\n", \
+        raw_bayer_image.raw_image.size().height, \
+        raw_bayer_image.raw_image.size().width );
+
+    printf("Gray image of shape h=%d, w=%d\n", \
+        raw_bayer_image.grayscale_image.size().height, \
+        raw_bayer_image.grayscale_image.size().width );
 }

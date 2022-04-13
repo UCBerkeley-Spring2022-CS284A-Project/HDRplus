@@ -6,8 +6,8 @@ project(hdrplus)
 # set c++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -march=native -O3")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -march=native -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -march=native -O3 -funroll-loops")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -march=native -O3 -funroll-loops")
 
 # Default build with release
 if(NOT CMAKE_BUILD_TYPE)
@@ -44,7 +44,7 @@ add_library(${PROJECT_NAME} SHARED
   src/hdrplus_pipeline.cpp
   src/merge.cpp )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY} )
 
@@ -60,10 +60,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests )
 
 add_executable( test_bayer_image 
   tests/test_bayer_image.cpp )
-target_link_libraries( test_bayer_image ${PROJECT_NAME} )
+target_link_libraries( test_bayer_image 
+  ${PROJECT_NAME} )
 
 add_executable( test_utility 
   tests/test_utility.cpp )
 target_link_libraries( test_utility 
-  ${OpenCV_LIBS} 
+  ${PROJECT_NAME} )
+
+add_executable( test_burst 
+  tests/test_burst.cpp )
+target_link_libraries( test_burst 
   ${PROJECT_NAME} )

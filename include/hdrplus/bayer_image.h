@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory> // std::shared_ptr
 #include <opencv2/opencv.hpp> // all opencv header
 #include <libraw/libraw.h>
 
@@ -11,14 +12,14 @@ class bayer_image
 {
     public:
         explicit bayer_image( const std::string& bayer_image_path );
-        ~bayer_image();
+        ~bayer_image() = default;
 
-        LibRaw libraw_processor;
+        std::shared_ptr<LibRaw> libraw_processor;
         cv::Mat raw_image;
         cv::Mat grayscale_image;
-        size_t width;
-        size_t height;
-        size_t white_level;
+        int width;
+        int height;
+        int white_level;
 };
 
 } // namespace hdrplus
