@@ -14,10 +14,8 @@ class burst
         explicit burst( const std::string& burst_path, const std::string& reference_image_path );
         ~burst() = default;
 
-        std::string reference_image_path;
-        std::string burst_path;
+        // Reference image index in the array
         int reference_image_idx;
-        std::vector<std::string> bayer_image_paths;
 
         // Source bayer images & grayscale unpadded image
         std::vector<hdrplus::bayer_image> bayer_images;
@@ -25,7 +23,14 @@ class burst
         // Image padded to tile size
         // Use for alignment, merging, and finishing
         std::vector<cv::Mat> grayscale_images_pad;
+    
+        // number of image (including reference) in burst
+        int num_images;
 
+    private:
+        std::string reference_image_path;
+        std::string burst_path;
+        std::vector<std::string> bayer_image_paths;
 };
 
 } // namespace hdrplus

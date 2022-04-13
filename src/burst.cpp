@@ -12,6 +12,9 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     // Search through the input path directory to get all input image path
     cv::glob( burst_path + "/*.dng", bayer_image_paths, false );
 
+    // Number of images
+    num_images = bayer_image_paths.size();
+
     // Find reference image path in input directory
     // reference image path need to be absolute path
     reference_image_idx = -1;
