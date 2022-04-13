@@ -25,6 +25,7 @@ class align
         void process( const hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& aligements );
 
+    private:
         const std::vector<int> inv_scale_factors = { 1, 2, 2, 4 };
 };
 

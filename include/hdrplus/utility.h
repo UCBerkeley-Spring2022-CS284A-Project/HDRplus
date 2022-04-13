@@ -119,6 +119,4 @@ cv::Mat downsample_nearest_neighbour( cv::Mat src_image )
     return dst_image;
 }
 
-cv::Mat gaussian_blur( cv::Mat src_image, double sigma );
-
 } // namespace hdrplus
