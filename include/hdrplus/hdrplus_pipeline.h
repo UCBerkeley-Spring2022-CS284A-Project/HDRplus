@@ -14,7 +14,7 @@ class hdrplus_pipeline
     private:
         hdrplus::align align;
         hdrplus::merge merge;
-        hdrplus::finish finish;
+        hdrplus::Finish finish;
     
     public:
         void run_pipeline();
