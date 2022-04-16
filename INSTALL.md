@@ -13,7 +13,8 @@
       step 2: extract the pkg using `tar xzvf LibRaw-X.YY.tar.gz`
       
       step 3: 
-      ```cd LibRaw-X.YY
+      ```shell
+         cd LibRaw-X.YY
          ./configure # with optional args
          make
       ```
@@ -22,7 +23,8 @@
       
       step 5: change the target_link_libraries in cmakelist file to the following:
       
-      ```target_link_libraries(${PROJECT_NAME} 
+      ```shell
+      target_link_libraries(${PROJECT_NAME} 
               ${OpenCV_LIBS}
               ${LIBRAW_LIBRARY})
               ```
