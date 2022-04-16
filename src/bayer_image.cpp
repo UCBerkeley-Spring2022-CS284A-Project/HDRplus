@@ -41,7 +41,7 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     // Create CV mat
     // https://answers.opencv.org/question/105972/de-bayering-a-cr2-image/
     // https://www.libraw.org/node/2141
-    raw_image = cv::Mat( width, height, CV_16U, libraw_processor->imgdata.rawdata.raw_image ).clone();
+    raw_image = cv::Mat( height, width, CV_16U, libraw_processor->imgdata.rawdata.raw_image ).clone(); // changed the order of width and height
 
     // 2x2 box filter
     grayscale_image = box_filter_2x2<uint16_t>( raw_image );
