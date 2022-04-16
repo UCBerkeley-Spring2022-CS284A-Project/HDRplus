@@ -12,7 +12,8 @@
       
       step 2: extract the pkg using `tar xzvf LibRaw-X.YY.tar.gz`
       
-      step 3: ```cd LibRaw-X.YY
+      step 3: 
+      ```cd LibRaw-X.YY
                ./configure # with optional args
                make
                ```
