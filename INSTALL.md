@@ -14,9 +14,9 @@
       
       step 3: 
       ```cd LibRaw-X.YY
-               ./configure # with optional args
-               make
-               ```
+         ./configure # with optional args
+         make
+      ```
                
       step 4: `sudo make install`
       
