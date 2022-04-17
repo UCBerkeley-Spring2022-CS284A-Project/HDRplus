@@ -5,6 +5,14 @@
 #include <opencv2/opencv.hpp> // all opencv header
 // TODO: add openmp support
 
+#if defined(__clang__)
+    #define LOOP_UNROLL unroll
+#elif defined(__GNUC__) || defined(__GNUG__)
+    #define LOOP_UNROLL GCC unroll
+#elif defined(_MSC_VER)
+    #define LOOP_UNROLL unroll
+#endif
+
 namespace hdrplus
 {
 
@@ -68,10 +76,10 @@ cv::Mat box_filter_kxk( cv::Mat src_image )
         {
             T box_sum = T(0);
 
-            #pragma GCC unroll kernel
+            #pragma LOOP_UNROLL
             for ( int kernel_row_i = 0; kernel_row_i < kernel; ++kernel_row_i )
             {
-                #pragma GCC unroll kernel
+                #pragma LOOP_UNROLL
                 for ( int kernel_col_i = 0; kernel_col_i < kernel; ++kernel_col_i )
                 {
                     box_sum += src_image_ptr[ ( row_i + kernel_row_i ) * src_step + ( col_i + kernel_col_i ) ];
