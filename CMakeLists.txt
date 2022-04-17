@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.0)
 project(hdrplus)
 
 # set c++ standard
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -march=native -O3 -funroll-loops")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -march=native -O3 -funroll-loops")
@@ -29,8 +29,9 @@ include_directories( BEFORE "/usr/local/include/")
 message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
 # dependency opencv
-find_package( OpenCV REQUIRED )
+find_package( OpenCV 4.5.5 REQUIRED )
 include_directories( BEFORE ${OpenCV_INCLUDE_DIRS})
+message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
 
 # library
 include_directories( 

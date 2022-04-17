@@ -200,6 +200,7 @@ void align::process( const hdrplus::burst& burst_images, \
         std::vector<std::pair<int, int>> prev_alignment;
         for ( int level_i = num_levels - 1; level_i >= 0; level_i-- )
         {
+            /*
             align_image_level(
                 ref_imgs_pyramid[ level_i ], // reference image at current level
                 alt_imgs_pyramid[ level_i ], // alternative image at current level
@@ -211,7 +212,8 @@ void align::process( const hdrplus::burst& burst_images, \
                 ( level_i == ( num_levels - 1 ) ? -1 : tile_sizes[ level_i + 1] ), // previous level tile size
                 search_radious[ level_i ], // search radious
                 distances[ level_i ] ); // L1/L2 distance
-            
+            */
+           
             // make curr alignment as previous alignment
             prev_alignment.swap( curr_alignment );
             curr_alignment.clear();

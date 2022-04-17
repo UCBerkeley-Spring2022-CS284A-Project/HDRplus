@@ -26,11 +26,6 @@ class burst
     
         // number of image (including reference) in burst
         int num_images;
-
-    private:
-        std::string reference_image_path;
-        std::string burst_path;
-        std::vector<std::string> bayer_image_paths;
 };
 
 } // namespace hdrplus

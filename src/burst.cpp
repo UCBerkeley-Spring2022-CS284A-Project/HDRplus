@@ -7,8 +7,8 @@ namespace hdrplus
 {
 
 burst::burst( const std::string& burst_path, const std::string& reference_image_path ) 
-    : reference_image_path( reference_image_path ), burst_path( burst_path )
 {
+    std::vector<cv::String> bayer_image_paths;
     // Search through the input path directory to get all input image path
     cv::glob( burst_path + "/*.dng", bayer_image_paths, false );
 
