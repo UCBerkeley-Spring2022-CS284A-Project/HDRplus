@@ -50,7 +50,8 @@ set( src_files
   src/burst.cpp
   src/finish.cpp
   src/hdrplus_pipeline.cpp
-  src/merge.cpp )
+  src/merge.cpp 
+  src/params.cpp)
 
 # Build runtime load dynamic shared library
 # https://cmake.org/cmake/help/latest/command/add_library.html
