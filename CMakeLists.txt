@@ -6,21 +6,12 @@ project(hdrplus)
 # set c++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -march=native -O3 -funroll-loops")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wall -march=native -O3 -funroll-loops")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -march=native -O3")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -std=c++11 -Wall -march=native -O3")
 
 # Default build with release
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# Arm / X86 optimize flag
-if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "arm*")
-  message(STATUS "ARM processor detected, will attempt to use NEON.")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
-else()
-  message(STATUS "Assuming AVX2 instructions available.")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 endif()
 
 # LibRaw-cmake
@@ -45,7 +36,7 @@ add_library(${PROJECT_NAME} SHARED
   src/hdrplus_pipeline.cpp
   src/merge.cpp )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME}
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY} )
 
@@ -54,7 +45,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )
 
 add_executable( demo 
   bin/demo.cpp )
-target_link_libraries( demo ${PROJECT_NAME} )
+target_link_libraries( demo 
+  ${PROJECT_NAME} )
 
 # unit test
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests )
