@@ -32,10 +32,11 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     width = int( libraw_processor->imgdata.rawdata.sizes.raw_width );
     height = int( libraw_processor->imgdata.rawdata.sizes.raw_height );
     white_level = int( libraw_processor->imgdata.rawdata.color.maximum );
-    black_level_per_channel[ 0 ] = int( libraw_processor->imgdata.rawdata.color.cblack[ 0 ] + libraw_processor->imgdata.rawdata.color.black );
-    black_level_per_channel[ 1 ] = int( libraw_processor->imgdata.rawdata.color.cblack[ 1 ] + libraw_processor->imgdata.rawdata.color.black );
-    black_level_per_channel[ 2 ] = int( libraw_processor->imgdata.rawdata.color.cblack[ 2 ] + libraw_processor->imgdata.rawdata.color.black );
-    black_level_per_channel[ 3 ] = int( libraw_processor->imgdata.rawdata.color.cblack[ 3 ] + libraw_processor->imgdata.rawdata.color.black );
+    black_level_per_channel.resize( 4 );
+    black_level_per_channel.at( 0 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 0 ] + libraw_processor->imgdata.rawdata.color.black );
+    black_level_per_channel.at( 1 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 1 ] + libraw_processor->imgdata.rawdata.color.black );
+    black_level_per_channel.at( 2 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 2 ] + libraw_processor->imgdata.rawdata.color.black );
+    black_level_per_channel.at( 3 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 3 ] + libraw_processor->imgdata.rawdata.color.black );
     iso = float( libraw_processor->imgdata.other.iso_speed );
 
     // Create CV mat

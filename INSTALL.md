@@ -35,6 +35,7 @@
    ```shell
    mkdir build
    cd build
+   # Default release build will be used
    cmake ..
    make -j 10
    ```

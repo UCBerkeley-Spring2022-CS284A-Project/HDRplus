@@ -43,15 +43,18 @@ endif()
 # library
 include_directories( include )
 
-# Build runtime load dynamic shared library
-# https://cmake.org/cmake/help/latest/command/add_library.html
-add_library(${PROJECT_NAME} SHARED 
+# all source files
+set( src_files 
   src/align.cpp
   src/bayer_image.cpp
   src/burst.cpp
   src/finish.cpp
   src/hdrplus_pipeline.cpp
   src/merge.cpp )
+
+# Build runtime load dynamic shared library
+# https://cmake.org/cmake/help/latest/command/add_library.html
+add_library(${PROJECT_NAME} SHARED ${src_files} )
 
 # and link it
 # https://cmake.org/cmake/help/v3.0/command/target_link_libraries.html
@@ -71,17 +74,14 @@ target_link_libraries( demo
 # unit test
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/tests )
 
-add_executable( test_bayer_image 
-  tests/test_bayer_image.cpp )
+add_executable( test_bayer_image tests/test_bayer_image.cpp)
 target_link_libraries( test_bayer_image 
   ${PROJECT_NAME} )
 
-add_executable( test_utility 
-  tests/test_utility.cpp )
+add_executable( test_utility tests/test_utility.cpp )
 target_link_libraries( test_utility 
   ${PROJECT_NAME} )
 
-add_executable( test_burst 
-  tests/test_burst.cpp )
+add_executable( test_burst tests/test_burst.cpp )
 target_link_libraries( test_burst 
   ${PROJECT_NAME} )
