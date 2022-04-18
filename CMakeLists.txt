@@ -43,13 +43,15 @@ add_library(${PROJECT_NAME} SHARED
   src/burst.cpp
   src/finish.cpp
   src/hdrplus_pipeline.cpp
-  src/merge.cpp )
+  src/merge.cpp 
+  src/params.cpp)
 
 target_link_libraries(${PROJECT_NAME} 
-  ${OpenCV_LIBS})
+  ${OpenCV_LIBS}
+  ${LIBRAW_LIBRARY})
 
 # example
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build )
 
 add_executable( demo 
   bin/demo.cpp )
