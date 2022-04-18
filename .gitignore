@@ -50,3 +50,10 @@ dataset/
 tests/test_bayer_image
 tests/test_utility
 tests/test_burst
+
+# VS/VSCode folder
+.vs/
+.vscode/
+
+# VS Settings
+CMakeSettings.json
