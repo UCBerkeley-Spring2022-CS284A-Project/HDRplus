@@ -8,7 +8,11 @@ namespace hdrplus
 {
 
 void merge::process( const hdrplus::burst& burst_images, \
+<<<<<<< HEAD
                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments)
+=======
+                     std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments )
+>>>>>>> Create merge branch
 {
     double lambda_shot, lambda_read;
     std::tie(lambda_shot, lambda_read) = merge::getNoiseParams(ISO, white_level, black_level);
