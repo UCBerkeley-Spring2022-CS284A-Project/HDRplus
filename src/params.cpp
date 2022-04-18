@@ -28,7 +28,22 @@ cv::Mat postprocess(std::shared_ptr<LibRaw>& libraw_ptr, RawpyArgs rawpyArgs){
 
     libraw_processed_image_t *ret_img = libraw_ptr->dcraw_make_mem_image(&errorcode);
 
-    cv::Mat processedImg(ret_img->height,ret_img->width,CV_16UC3,ret_img->data);
+    int opencv_type = CV_16UC3; // 16bit RGB
+    if(ret_img->colors==1){ // grayscale
+        if(ret_img->bits == 8){ // uint8
+            opencv_type = CV_8UC1;
+        }else{ // uint16
+            opencv_type = CV_16UC1;
+        }
+    }else{// RGB
+        if(ret_img->bits == 8){ //8bit
+            opencv_type = CV_8UC3;
+        }else{ // 16bit
+            opencv_type = CV_16UC3;
+        }
+    }
+
+    cv::Mat processedImg(ret_img->height,ret_img->width,opencv_type,ret_img->data);
 
     std::cout<<"postprocess finished!"<<std::endl;
     return processedImg;
