@@ -1,7 +1,9 @@
 
 ## Step by step installation
 
-1. [OpenCV](git@github.com:opencv/opencv.git) v4.5.5 build from source through CMake
+1. [OpenCV](git@github.com:opencv/opencv.git) v3.4.0 build from source through CMake
+   1. v4.x+ version have some MacOS compatable issue
+   2. v4.x+ version work on Ubuntu
 
 
 2. LibRaw
