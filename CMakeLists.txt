@@ -9,25 +9,42 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -march=native -O3")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -std=c++11 -Wall -march=native -O3")
 
-# Default build with release
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+# make sure we use Release and warn otherwise
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+    "MinSizeRel" "RelWithDebInfo")
 endif()
+if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  message(WARNING "CMAKE_BUILD_TYPE not set to 'Release'. Performance may be terrible.")
+else()
+  message(STATUS "Building with build type '${CMAKE_BUILD_TYPE}'")
+endif()
+
+# require OpenCV
+find_package( OpenCV 3 REQUIRED )
+include_directories( BEFORE ${OpenCV_INCLUDE_DIRS} )
+message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
 
 # LibRaw-cmake
 find_library(LIBRAW_LIBRARY NAMES raw raw_r)
 include_directories( BEFORE "/usr/local/include/")
 message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
-# dependency opencv
-find_package( OpenCV 4.5.5 REQUIRED )
-include_directories( BEFORE ${OpenCV_INCLUDE_DIRS})
-message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
+if(NOT APPLE)
+  # The clang compiler (on osx) is somehow much more strict
+  # than the compilers on ubuntu and so this does not seem
+  # possible on OSX just yet.
+  add_definitions( -Werror )
+endif()
 
 # library
-include_directories( 
-  ${PROJECT_SOURCE_DIR}/include )
+include_directories( include )
 
+# Build runtime load dynamic shared library
+# https://cmake.org/cmake/help/latest/command/add_library.html
 add_library(${PROJECT_NAME} SHARED 
   src/align.cpp
   src/bayer_image.cpp
@@ -36,7 +53,10 @@ add_library(${PROJECT_NAME} SHARED
   src/hdrplus_pipeline.cpp
   src/merge.cpp )
 
-target_link_libraries(${PROJECT_NAME}
+# and link it
+# https://cmake.org/cmake/help/v3.0/command/target_link_libraries.html
+# use public interace because our .h / .hpp file include opencv .h / .hpp file
+target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY} )
 
