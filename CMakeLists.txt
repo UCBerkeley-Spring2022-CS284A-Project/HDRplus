@@ -20,7 +20,7 @@ include_directories( BEFORE "/usr/local/include/")
 message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
 # dependency opencv
-find_package( OpenCV 4.5.5 REQUIRED )
+find_package( OpenCV 4 REQUIRED )
 include_directories( BEFORE ${OpenCV_INCLUDE_DIRS})
 message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
 
