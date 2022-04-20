@@ -10,6 +10,9 @@ namespace hdrplus
 class merge
 {
     public:
+        float baseline_lambda_shot = 3.24 * pow( 10, -4 );
+        float baseline_lambda_read = 4.3 * pow( 10, -6 );
+
         merge() = default;
         ~merge() = default;
 
@@ -24,6 +27,11 @@ class merge
         void process( const hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
                       int ISO, \
+                      int white_level, \
+                      double black_level );
+    
+    private:
+        std::pair<double, double> getNoiseParams( int ISO, \
                       int white_level, \
                       double black_level );
 };
