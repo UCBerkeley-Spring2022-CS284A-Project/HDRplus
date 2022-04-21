@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp> // all opencv header
 #include "hdrplus/finish.h"
+#include <type_traits>
 
 namespace hdrplus
 {
@@ -18,52 +19,38 @@ namespace hdrplus
     }
 
     void convert16bit2_8bit_(cv::Mat& I){
-        // std::cout<<*(I.data)<<std::endl;
-        cv::MatIterator_<cv::Vec3b> it, end;
-        for( it = I.begin<cv::Vec3b>(), end = I.end<cv::Vec3b>(); it != end; ++it)
+        cv::MatIterator_<cv::Vec3w> it, end;
+        for( it = I.begin<cv::Vec3w>(), end = I.end<cv::Vec3w>(); it != end; ++it)
         {
+            // std::cout<<sizeof (*it)[0] <<std::endl;
             (*it)[0] *=(255.0/USHRT_MAX);
-            (*it)[1] *=(255.0/USHRT_MAX); //USHRT_MAX
+            (*it)[1] *=(255.0/USHRT_MAX);
             (*it)[2] *=(255.0/USHRT_MAX);
-            
         }
-        // u_int16_t* ptr;
-        // int nrows = A.rows;
-        // for(int i=0;i<nrows;i++){
-
-        //     for(int j=0;j<A.cols;j++){
-        //         for(int k=0;k<A.channels();k++){
-        //             *(ptr+(A.rows*i+j)*A.channels()+k)*=(255.0/USHRT_MAX);
-        //         }
-        //     }
-        // }
     }
 
     void Finish::pipeline_finish(){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
-        // copy_mat_16U(rawReference,mergedBayer);
-        // copy_rawImg2libraw(refBayer->libraw_processor,mergedBayer);
-        // rawReference = cv::Mat( rawReference.rows, rawReference.cols, CV_16U, refBayer->libraw_processor->imgdata.rawdata.raw_image );
-        // showImg(rawReference);
+
+// read in ref img
+        bayer_image* ref = new bayer_image(rawPathList[refIdx]);
+        cv::Mat processedRefImage = postprocess(ref->libraw_processor,params.rawpyArgs);
+
+// write reference image
         if(params.flags["writeReferenceImage"]){
             std::cout<<"process reference img ..."<<std::endl;
-            cv::Mat processedImage = postprocess(refBayer->libraw_processor,params.rawpyArgs);
-            //normalize(processedImage,CV_16UC1);
-            std::cout<<"processedImage.rows = "<<processedImage.rows<<std::endl;
-            // convert16bit2_8bit_(processedImage);
             
-            
-            
-            
-            // processedImage.convertTo(processedImage, CV_8UC3);
-            cv::cvtColor(processedImage, processedImage, cv::COLOR_RGB2BGR);
-            cv::imshow("test",processedImage);
-            cv::imwrite("processedRef.png", processedImage);
-            cv::waitKey(0);
+            convert16bit2_8bit_(processedRefImage);
+            processedRefImage.convertTo(processedRefImage, CV_8UC3);
+            cv::cvtColor(processedRefImage, processedRefImage, cv::COLOR_RGB2BGR);
+            // cv::imshow("test",processedImage);
+            cv::imwrite("processedRef.jpg", processedRefImage);
+            // cv::waitKey(0);
         }
-        
-        // showImg(rawReference);
+
+// write gamma reference
+
 
     }
 
@@ -106,6 +93,30 @@ namespace hdrplus
 
     //     std::cout<<"postprocess finished!"<<std::endl;
     //     return processedImg;
+    // }
+
+    // void Finish::pipeline_finish(){ // post process test
+    //     // copy mergedBayer to rawReference
+    //     std::cout<<"finish pipeline start ..."<<std::endl;
+    //     // copy_mat_16U(rawReference,mergedBayer);
+    //     // copy_rawImg2libraw(refBayer->libraw_processor,mergedBayer);
+    //     // rawReference = cv::Mat( rawReference.rows, rawReference.cols, CV_16U, refBayer->libraw_processor->imgdata.rawdata.raw_image );
+    //     // showImg(rawReference);
+    //     if(params.flags["writeReferenceImage"]){
+    //         std::cout<<"process reference img ..."<<std::endl;
+    //         cv::Mat processedImage = postprocess(refBayer->libraw_processor,params.rawpyArgs);
+    //         //normalize(processedImage,CV_16UC1);
+    //         std::cout<<"processedImage.rows = "<<processedImage.rows<<std::endl;
+    //         // convert16bit2_8bit_(processedImage);
+    //         // processedImage.convertTo(processedImage, CV_8UC3);
+    //         cv::cvtColor(processedImage, processedImage, cv::COLOR_RGB2BGR);
+    //         cv::imshow("test",processedImage);
+    //         cv::imwrite("processedRef.png", processedImage);
+    //         cv::waitKey(0);
+    //     }
+        
+    //     // showImg(rawReference);
+
     // }
 
     
