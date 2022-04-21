@@ -11,6 +11,12 @@
 
 namespace hdrplus
 {
+    uint16_t uGammaCompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent);
+    uint16_t uGammaDecompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent);
+    cv::Mat uGammaCompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent);
+    cv::Mat uGammaDecompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent);
+    cv::Mat gammasRGB(cv::Mat img, bool mode);
+    
 
 class Finish
 {
