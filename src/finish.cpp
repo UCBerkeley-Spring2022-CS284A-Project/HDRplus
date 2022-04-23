@@ -136,6 +136,19 @@ namespace hdrplus
             cv::imwrite("processedRefGamma.jpg", outputImg);
         }
 
+// get the bayer_image of the merged image
+        bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
+        copy_mat_16U(mergedImg->raw_image,this->mergedBayer);
+        cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);
+
+// write merged image
+        if(params.flags["writeMergedImage"]){
+            std::cout<<"writing Merged img ..."<<std::endl;
+            cv::Mat outputImg = convert16bit2_8bit_(processedMerge.clone());
+            cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+            cv::imwrite("mergedImg.jpg", outputImg);
+        }
+
     }
 
     void Finish::copy_mat_16U(cv::Mat& A, cv::Mat B){
