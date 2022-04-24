@@ -34,6 +34,20 @@ namespace hdrplus
         return ans;
     }
 
+    cv::Mat convert8bit2_12bit_(cv::Mat ans){
+        // cv::Mat ans(I);
+        cv::MatIterator_<cv::Vec3w> it, end;
+        for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
+        {
+            // std::cout<<sizeof (*it)[0] <<std::endl;
+            (*it)[0] *=(2048.0/255.0);
+            (*it)[1] *=(2048.0/255.0);
+            (*it)[2] *=(2048.0/255.0);
+        }
+        ans.convertTo(ans, CV_16UC3);
+        return ans;
+    }
+
     uint16_t uGammaCompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent){
         // Normalize pixel val
         x/=USHRT_MAX;
@@ -109,6 +123,16 @@ namespace hdrplus
         }
     }
 
+    void copy_mat_16U_2(u_int16_t* ptr_A, cv::Mat B){
+        // u_int16_t* ptr_A = (u_int16_t*)A.data;
+        u_int16_t* ptr_B = (u_int16_t*)B.data;
+        for(int r = 0; r < B.rows; r++) {
+            for(int c = 0; c < B.cols; c++) {
+                *(ptr_A+r*B.cols+c) = *(ptr_B+r*B.cols+c);
+            }
+        }
+    }
+
     void Finish::pipeline_finish(){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
@@ -137,8 +161,8 @@ namespace hdrplus
         }
 
 // get the bayer_image of the merged image
-        bayer_image* mergedImg = new bayer_image("../test_data/merged16.jpg");
-        // copy_mat_16U(mergedImg->raw_image,this->mergedBayer);
+        bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
+        copy_mat_16U_2(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
         cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);
 
 // write merged image
@@ -169,6 +193,8 @@ namespace hdrplus
             }
         }
     }
+
+    
 
     void Finish::copy_rawImg2libraw(std::shared_ptr<LibRaw>& libraw_ptr, cv::Mat B){
         u_int16_t* ptr_A = (u_int16_t*)libraw_ptr->imgdata.rawdata.raw_image;
