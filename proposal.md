@@ -3,7 +3,7 @@ title: Proposal
 layout: default
 ---
 
-## HDR+ Denoising Pipeline
+## HDR+ Denoising Pipeline - Proposal
 
 Summary: Taking multi-shot / burst sequences of images as input, we aim to implement a burst denoising pipeline (based on Google's HDR+) to produce a temporally and spatially denoised image, which in turn become suitable for HDR image generation. 
 
