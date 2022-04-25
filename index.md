@@ -25,7 +25,7 @@ Siming Liu ([liusm220036@berkeley.edu](mailto:liusm220036@berkeley.edu))
 
 View as separate PDF file: [HDR Milestone Report](CS_184_284A_Final_Project_Milestone_HDR.pdf)
 
-
+<iframe src="CS_184_284A_Final_Project_Milestone_HDR.pdf" width="100%"></iframe>
 
 ---
 
