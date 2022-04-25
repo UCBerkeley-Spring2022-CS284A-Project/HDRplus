@@ -19,5 +19,7 @@ sass:
     sass_dir: _sass
 
 nav:
- - name: "Proposal"
+ - name: "Milestone"
    link: "/HDRplus/"
+ - name: "Proposal"
+   link: "/HDRplus/proposal"
