@@ -17,12 +17,12 @@ class merge
          * @brief Run alignment on burst of images
          * 
          * @param burst_images collection of burst images
-         * @param aligements alignment in pixel value pair. 
+         * @param alignments alignment in pixel value pair. 
          *      Outer most vector is per alternative image.
-         *      Inner most two vector is for horizontle & verticle tiles 
+         *      Inner most two vector is for horizontal & vertical tiles 
          */
         void process( const hdrplus::burst& burst_images, \
-                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& aligements );
+                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments);
 };
 
 } // namespace hdrplus

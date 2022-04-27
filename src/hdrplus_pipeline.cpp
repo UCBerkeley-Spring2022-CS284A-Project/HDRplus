@@ -19,7 +19,7 @@ void hdrplus_pipeline::run_pipeline( \
     // Create burst of images
     burst burst_images( burst_path, reference_image_path );
     std::vector<std::vector<std::vector<std::pair<int, int>>>> alignments;
-    
+
     // Run align
     align_module.process( burst_images, alignments );
 

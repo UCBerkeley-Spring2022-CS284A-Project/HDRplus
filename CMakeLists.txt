@@ -33,6 +33,11 @@ find_library(LIBRAW_LIBRARY NAMES raw raw_r)
 include_directories( BEFORE "/usr/local/include/")
 message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
+# Exiv2
+find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
+link_libraries(exiv2lib)
+message(STATUS "Found Exiv2 and linked")
+
 if(NOT APPLE)
   # The clang compiler (on osx) is somehow much more strict
   # than the compilers on ubuntu and so this does not seem
