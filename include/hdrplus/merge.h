@@ -22,10 +22,7 @@ class merge
          *      Inner most two vector is for horizontal & vertical tiles 
          */
         void process( const hdrplus::burst& burst_images, \
-                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
-                      int ISO, \
-                      int white_level, \
-                      double black_level );
+                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments);
 };
 
 } // namespace hdrplus

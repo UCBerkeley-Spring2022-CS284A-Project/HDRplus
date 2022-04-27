@@ -7,10 +7,7 @@ namespace hdrplus
 {
 
 void merge::process( const hdrplus::burst& burst_images, \
-                     std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
-                     int ISO, \
-                     int white_level, \
-                     double black_level )
+                     std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments)
 {
     
 }

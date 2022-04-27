@@ -26,6 +26,10 @@ class bayer_image
         int white_level;
         std::vector<int> black_level_per_channel;
         float iso;
+
+    private:
+        float baseline_lambda_shot = 3.24 * pow( 10, -4 );
+        float baseline_lambda_read = 4.3 * pow( 10, -6 );
 };
 
 } // namespace hdrplus
