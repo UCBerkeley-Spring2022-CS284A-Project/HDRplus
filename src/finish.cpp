@@ -6,31 +6,29 @@
 
 namespace hdrplus
 {
-    // void normalize(cv::Mat& A,int opencvType){
-    //     std::cout<<A.size()<<std::endl;
-    //     std::cout<<A.channels()<<std::endl;
-    //     u_int16_t* ptr = (u_int16_t*)A.data;
-    //     const double div = USHRT_MAX;
-    //     for(int i=0;i<A.rows;i++){
-    //         for(int j=0;j<A.cols;j++){
-    //             for(int k=0;k<A.channels();k++){
-    //                 *(ptr+(A.rows*i+j)*A.channels()+k)/=div;
-    //             }
-    //         }
-    //     }
-    // }
+    
 
     cv::Mat convert16bit2_8bit_(cv::Mat ans){
-        // cv::Mat ans(I);
-        cv::MatIterator_<cv::Vec3w> it, end;
-        for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
-        {
-            // std::cout<<sizeof (*it)[0] <<std::endl;
-            (*it)[0] *=(255.0/USHRT_MAX);
-            (*it)[1] *=(255.0/USHRT_MAX);
-            (*it)[2] *=(255.0/USHRT_MAX);
+        if(ans.type()==CV_16UC3){
+            cv::MatIterator_<cv::Vec3w> it, end;
+            for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
+            {
+                // std::cout<<sizeof (*it)[0] <<std::endl;
+                (*it)[0] *=(255.0/USHRT_MAX);
+                (*it)[1] *=(255.0/USHRT_MAX);
+                (*it)[2] *=(255.0/USHRT_MAX);
+            }
+            ans.convertTo(ans, CV_8UC3);
+        }else if(ans.type()==CV_16UC1){
+            u_int16_t* ptr = (u_int16_t*)ans.data;
+            int end = ans.rows*ans.cols;
+            for(int i=0;i<end;i++){
+                *(ptr+i) *=(255.0/USHRT_MAX);
+            }
+            ans.convertTo(ans, CV_8UC1);
+        }else{
+            std::cout<<"Unsupported Data Type"<<std::endl;
         }
-        ans.convertTo(ans, CV_8UC3);
         return ans;
     }
 
@@ -94,24 +92,47 @@ namespace hdrplus
     }
 
     cv::Mat uGammaCompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
-        cv::MatIterator_<cv::Vec3w> it, end;
-        for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
-        {
-            (*it)[0] =uGammaCompress_1pix((*it)[0],threshold,gainMin,gainMax,exponent);
-            (*it)[1] =uGammaCompress_1pix((*it)[1],threshold,gainMin,gainMax,exponent);
-            (*it)[2] =uGammaCompress_1pix((*it)[2],threshold,gainMin,gainMax,exponent);
+        if(m.type()==CV_16UC3){
+            cv::MatIterator_<cv::Vec3w> it, end;
+            for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
+            {
+                (*it)[0] =uGammaCompress_1pix((*it)[0],threshold,gainMin,gainMax,exponent);
+                (*it)[1] =uGammaCompress_1pix((*it)[1],threshold,gainMin,gainMax,exponent);
+                (*it)[2] =uGammaCompress_1pix((*it)[2],threshold,gainMin,gainMax,exponent);
+            }
+        }else if(m.type()==CV_16UC1){
+            u_int16_t* ptr = (u_int16_t*)m.data;
+            int end = m.rows*m.cols;
+            for(int i=0;i<end;i++){
+                *(ptr+i) = uGammaCompress_1pix(*(ptr+i),threshold,gainMin,gainMax,exponent);
+            }
+
+        }else{
+            std::cout<<"Unsupported Data Type"<<std::endl;
         }
         return m;
     }
 
     cv::Mat uGammaDecompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
-        cv::MatIterator_<cv::Vec3w> it, end;
-        for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
-        {
-            (*it)[0] =uGammaDecompress_1pix((*it)[0],threshold,gainMin,gainMax,exponent);
-            (*it)[1] =uGammaDecompress_1pix((*it)[1],threshold,gainMin,gainMax,exponent);
-            (*it)[2] =uGammaDecompress_1pix((*it)[2],threshold,gainMin,gainMax,exponent);
+        if(m.type()==CV_16UC3){
+            cv::MatIterator_<cv::Vec3w> it, end;
+            for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
+            {
+                (*it)[0] =uGammaDecompress_1pix((*it)[0],threshold,gainMin,gainMax,exponent);
+                (*it)[1] =uGammaDecompress_1pix((*it)[1],threshold,gainMin,gainMax,exponent);
+                (*it)[2] =uGammaDecompress_1pix((*it)[2],threshold,gainMin,gainMax,exponent);
+            }
+        }else if(m.type()==CV_16UC1){
+            u_int16_t* ptr = (u_int16_t*)m.data;
+            int end = m.rows*m.cols;
+            for(int i=0;i<end;i++){
+                *(ptr+i) = uGammaDecompress_1pix(*(ptr+i),threshold,gainMin,gainMax,exponent);
+            }
+
+        }else{
+            std::cout<<"Unsupported Data Type"<<std::endl;
         }
+        
         return m;
     }
 
@@ -131,6 +152,36 @@ namespace hdrplus
                 *(ptr_A+r*B.cols+c) = *(ptr_B+r*B.cols+c);
             }
         }
+    }
+
+    cv::Mat mean_(cv::Mat img){
+        // initialize processedImg
+        int H = img.rows;
+        int W = img.cols;
+        cv::Mat processedImg = cv::Mat(H,W,CV_16UC1);
+        u_int16_t* ptr = (u_int16_t*)processedImg.data;
+        
+        // traverse img
+        int idx = 0;
+        cv::MatIterator_<cv::Vec3w> it, end;
+        for( it = img.begin<cv::Vec3w>(), end = img.end<cv::Vec3w>(); it != end; ++it)
+        {
+            uint32_t tmp = (*it)[0]+(*it)[1]+(*it)[2];
+            uint16_t avg_val = tmp/3;
+            *(ptr+idx) = avg_val;
+            idx++;
+        }
+
+        return processedImg;
+    }
+
+    void localToneMap(cv::Mat mergedImage, Options options, cv::Mat& shortg){
+        std::cout<<"HDR Tone Mapping..."<<std::endl;
+        std::cout<<"options.ltmGain="<< options.ltmGain<<std::endl;
+        // # Work with grayscale images
+        shortg = mean_(mergedImage);
+        shortg = gammasRGB(shortg,true);
+
     }
 
     void Finish::pipeline_finish(){
@@ -182,6 +233,28 @@ namespace hdrplus
             cv::imwrite("mergedImgGamma.jpg", outputImg);
         }
 
+// step 5. HDR tone mapping
+// processedImage, gain, shortExposure, longExposure, fusedExposure = localToneMap(burstPath, processedImage, options)
+        if(params.options.ltmGain){
+            cv::Mat shortg;
+            localToneMap(processedMerge, params.options,shortg);
+
+            if(params.flags["writeShortExposure"]){
+                std::cout<<"writing ShortExposure img ..."<<std::endl;
+                cv::Mat outputImg = convert16bit2_8bit_(shortg);
+                cv::imwrite("shortg.jpg", outputImg);
+            }
+        }
+
+
+        // if(processedMerge.type()==CV_16UC3){
+        //     std::cout<<"processedMerge.type = 16UC3"<<std::endl;
+        // }
+
+        
+        
+
+// End of finishing
     }
 
     void Finish::copy_mat_16U(cv::Mat& A, cv::Mat B){
