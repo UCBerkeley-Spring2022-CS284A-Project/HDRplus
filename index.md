@@ -44,3 +44,9 @@ View at Google Slides: [HDR Milestone Slides](https://docs.google.com/presentati
 The following embedding will only show the slides if you are logged into a Berkeley account.
 
 <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRkj5amj5lBx9vuv9oOPslXLTrcsgQuFT19T22RNyDCPmMfCswGqMacS4Y-zx-KFb7Hk08QWB_YhdZT/embed?start=false&loop=false&delayms=3000" frameborder="0" width="100%" height="415" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+
+---
+
+## Codebase
+
+You can find our codebase on [Github](https://github.com/UCBerkeley-Spring2022-CS284A-Project/HDRplus).
