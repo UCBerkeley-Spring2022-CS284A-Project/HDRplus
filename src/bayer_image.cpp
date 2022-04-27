@@ -19,13 +19,13 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     if ( ( return_code = libraw_processor->open_file( bayer_image_path.c_str() ) ) != LIBRAW_SUCCESS )
     {
         libraw_processor->recycle();
-        throw std::runtime_error("Error opening file " + bayer_image_path + libraw_strerror( return_code ));
+        throw std::runtime_error("Error opening file " + bayer_image_path + " " + libraw_strerror( return_code ));
     }
 
     // Unpack the raw image
     if ( ( return_code = libraw_processor->unpack() ) != LIBRAW_SUCCESS )
     {
-        throw std::runtime_error("Error unpack file " + bayer_image_path + libraw_strerror( return_code ));
+        throw std::runtime_error("Error unpack file " + bayer_image_path + " " + libraw_strerror( return_code ));
     }
 
     // Get image basic info
@@ -48,7 +48,7 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     grayscale_image = box_filter_2x2<uint16_t>( raw_image );
 
     #ifndef NDEBUG
-    printf("%s::%s read bayer image %s with width %zu, height %zu, iso %.3f, white level %d, black level %d %d %d %d\n", \
+    printf("%s::%s read bayer image %s with\n width %zu\n height %zu\n iso %.3f\n white level %d\n black level %d %d %d %d\n", \
         __FILE__, __func__, bayer_image_path.c_str(), width, height, iso, white_level, \
         black_level_per_channel[0], black_level_per_channel[1], black_level_per_channel[2], black_level_per_channel[3] );
     fflush( stdout );
