@@ -33,7 +33,7 @@ View as separate PDF file: [HDR Milestone Report](CS_184_284A_Final_Project_Mile
 
 View at YouTube: [HDR Milestone Video](https://youtu.be/lYK3vGGD1II)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/lYK3vGGD1II" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="100%" height="394" src="https://www.youtube.com/embed/lYK3vGGD1II" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ---
 
@@ -41,4 +41,4 @@ View at YouTube: [HDR Milestone Video](https://youtu.be/lYK3vGGD1II)
 
 View at Google Slides: [HDR Milestone Slides](https://docs.google.com/presentation/d/1qqvNpkDU73VUGD2vifNmQG8hGs0QnIM6pYYcJUwDR_I/edit?usp=sharing)
 
-<iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRkj5amj5lBx9vuv9oOPslXLTrcsgQuFT19T22RNyDCPmMfCswGqMacS4Y-zx-KFb7Hk08QWB_YhdZT/embed?start=false&loop=false&delayms=3000" frameborder="0" width="960" height="569" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+<iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRkj5amj5lBx9vuv9oOPslXLTrcsgQuFT19T22RNyDCPmMfCswGqMacS4Y-zx-KFb7Hk08QWB_YhdZT/embed?start=false&loop=false&delayms=3000" frameborder="0" width="100%" height="415" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
