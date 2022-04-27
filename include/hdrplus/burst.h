@@ -20,7 +20,14 @@ class burst
         // Source bayer images & grayscale unpadded image
         std::vector<hdrplus::bayer_image> bayer_images;
 
-        // Image padded to tile size
+        // Image padded to upper level tile size (16*2)
+        // Use for alignment, merging, and finishing
+        std::vector<cv::Mat> bayer_images_pad;
+
+        // Padding information
+        std::vector<int> padding_info_bayer;
+
+        // Image padded to upper level tile size (16)
         // Use for alignment, merging, and finishing
         std::vector<cv::Mat> grayscale_images_pad;
     

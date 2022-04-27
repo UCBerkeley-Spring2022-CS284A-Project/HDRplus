@@ -31,7 +31,12 @@
               ${LIBRAW_LIBRARY})
               ```
 
-3. Run CMake to build
+3. Install `exiv2`
+   1. MacOS : `brew install exiv2` & `brew install libssh` 
+   2. Ubuntu : `apt install libexiv2-dev`
+
+
+4. Run CMake to build
    ```shell
    mkdir build
    cd build

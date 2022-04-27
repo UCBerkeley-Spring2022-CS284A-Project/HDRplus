@@ -2,6 +2,7 @@
 #include <string>
 #include <opencv2/opencv.hpp> // all opencv header
 #include "hdrplus/burst.h"
+#include "hdrplus/utility.h"
 
 namespace hdrplus
 {
@@ -49,28 +50,39 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
         bayer_images.emplace_back( bayer_image_path_i );
     }
 
-    // Pad gray scale image
-    int pad_height = bayer_images[ 0 ].height % 32;
-    int pad_width  = bayer_images[ 0 ].width  % 32;
-    // https://docs.opencv.org/3.4/dc/da3/tutorial_copyMakeBorder.html
+    // Pad information
+    int tile_size_bayer = 32;
+    int padding_top = tile_size_bayer / 2;
+    int padding_bottom = tile_size_bayer / 2 + \
+        ( bayer_images[ 0 ].height % tile_size_bayer == 0 ? \
+        0 : tile_size_bayer - bayer_images[ 0 ].height % tile_size_bayer );
+    int padding_left = tile_size_bayer / 2;
+    int padding_right = tile_size_bayer / 2 + \
+        ( bayer_images[ 0 ].width % tile_size_bayer == 0 ? \
+        0 : tile_size_bayer - bayer_images[ 0 ].width % tile_size_bayer );
+    padding_info_bayer = std::vector<int>{ padding_top, padding_bottom, padding_left, padding_right };
+
+    // Pad bayer image
     for ( const auto& bayer_image_i : bayer_images )
     {
-        cv::Mat grayscale_image_pad_i;
-        cv::copyMakeBorder( bayer_image_i.grayscale_image, \
-                            grayscale_image_pad_i, \
-                            0, pad_height, 0, pad_width, \
+        cv::Mat bayer_image_pad_i;
+        cv::copyMakeBorder( bayer_image_i.raw_image, \
+                            bayer_image_pad_i, \
+                            padding_top, padding_bottom, padding_left, padding_right, \
                             cv::BORDER_REFLECT );
+
         // cv::Mat use internal reference count
-        grayscale_images_pad.emplace_back( grayscale_image_pad_i );
+        bayer_images_pad.emplace_back( bayer_image_pad_i );
+        grayscale_images_pad.emplace_back( box_filter_2x2<uint16_t>( bayer_image_pad_i ) );
     } 
 
     #ifndef NDEBUG
-    printf("%s::%s Pad image from (%d, %d) -> (%d, %d)\n", \
+    printf("%s::%s Pad bayer image from (%d, %d) -> (%d, %d)\n", \
         __FILE__, __func__, \
-        bayer_images[ 0 ].grayscale_image.size().height, \
-        bayer_images[ 0 ].grayscale_image.size().width, \
-        grayscale_images_pad[ 0 ].size().height, \
-        grayscale_images_pad[ 0 ].size().width );
+        bayer_images[ 0 ].height, \
+        bayer_images[ 0 ].width, \
+        bayer_images_pad[ 0 ].size().height, \
+        bayer_images_pad[ 0 ].size().width );
     #endif
 }
 

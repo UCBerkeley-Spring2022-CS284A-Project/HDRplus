@@ -52,14 +52,6 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     black_level_per_channel.at(3) = exifData["Exif.Image.BlackLevel"].toLong(3);
     iso = exifData["Exif.Image.ISOSpeedRatings"].toLong();
 
-    // white_level = int( libraw_processor->imgdata.rawdata.color.maximum );
-    // black_level_per_channel.resize( 4 );
-    // black_level_per_channel.at( 0 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 0 ] + libraw_processor->imgdata.rawdata.color.black );
-    // black_level_per_channel.at( 1 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 1 ] + libraw_processor->imgdata.rawdata.color.black );
-    // black_level_per_channel.at( 2 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 2 ] + libraw_processor->imgdata.rawdata.color.black );
-    // black_level_per_channel.at( 3 ) = int( libraw_processor->imgdata.rawdata.color.cblack[ 3 ] + libraw_processor->imgdata.rawdata.color.black );
-    // iso = float( libraw_processor->imgdata.other.iso_speed );
-
     // Create CV mat
     // https://answers.opencv.org/question/105972/de-bayering-a-cr2-image/
     // https://www.libraw.org/node/2141

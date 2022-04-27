@@ -35,7 +35,6 @@ message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
 # Exiv2
 find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
-link_libraries(exiv2lib)
 message(STATUS "Found Exiv2 and linked")
 
 if(NOT APPLE)
@@ -56,7 +55,7 @@ set( src_files
   src/finish.cpp
   src/hdrplus_pipeline.cpp
   src/merge.cpp 
-  src/params.cpp)
+  src/params.cpp )
 
 # Build runtime load dynamic shared library
 # https://cmake.org/cmake/help/latest/command/add_library.html
@@ -64,10 +63,11 @@ add_library(${PROJECT_NAME} SHARED ${src_files} )
 
 # and link it
 # https://cmake.org/cmake/help/v3.0/command/target_link_libraries.html
-# use public interace because our .h / .hpp file include opencv .h / .hpp file
+# use public because our .h / .hpp file include opencv .h / .hpp file
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
-  ${LIBRAW_LIBRARY} )
+  ${LIBRAW_LIBRARY}
+  exiv2lib )
 
 # example
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )
