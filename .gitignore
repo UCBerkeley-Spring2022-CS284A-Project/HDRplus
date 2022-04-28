@@ -50,6 +50,7 @@ dataset/
 tests/test_bayer_image
 tests/test_utility
 tests/test_burst
+tests/test_align
 
 # VS/VSCode folder
 .vs/

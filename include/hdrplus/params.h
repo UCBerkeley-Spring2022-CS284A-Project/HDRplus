@@ -5,7 +5,6 @@
 #include <opencv2/opencv.hpp> // all opencv header
 #include <libraw/libraw.h>
 
-
 namespace hdrplus
 {
 class RawpyArgs{

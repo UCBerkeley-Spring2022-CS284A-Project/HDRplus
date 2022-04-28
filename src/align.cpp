@@ -17,12 +17,23 @@ static void build_per_grayimg_pyramid( \
     const cv::Mat& src_image, \
     const std::vector<int>& inv_scale_factors )
 {
-    images_pyramid.resize( inv_scale_factors.size() );
-    
+    #ifndef NDEBUG
+    printf("%s::%s build_per_grayimg_pyramid start with scale factor : ", __FILE__, __func__ );
     for ( int i = 0; i < inv_scale_factors.size(); ++i )
     {
-        cv::Mat blur_image;
-        cv::Mat downsample_image;
+        printf("%d ", inv_scale_factors.at( i ));
+    }
+    printf("\n");
+    #endif
+
+    images_pyramid.resize( inv_scale_factors.size() );
+
+    cv::Mat blur_image;
+    cv::Mat downsample_image;
+
+    for ( int i = 0; i < inv_scale_factors.size(); ++i )
+    {
+        printf("inv scale factor %d\n", inv_scale_factors.at( i ) );
 
         switch ( inv_scale_factors[ i ] )
         {
@@ -32,9 +43,13 @@ static void build_per_grayimg_pyramid( \
             downsample_image = src_image;
             break;
         case 2:
-            // Gaussian blur
-            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), 1.0 );
+            printf("gaussian blur 2 start\n"); fflush(stdout);
 
+            // Gaussian blur
+            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
+
+            printf("gaussian blur 2 done\n"); fflush(stdout);
+        
             // Downsample
             downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
 
@@ -43,13 +58,19 @@ static void build_per_grayimg_pyramid( \
 
             break;
         case 4:
-            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), 2.0 );
+            printf("gaussian blur 4 start\n"); fflush(stdout);
+            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
+            printf("gaussian blur 4 done\n"); fflush(stdout);
+
             downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
             images_pyramid[ images_pyramid.size() - i - 1 ] = downsample_image;
             break;
         default:
             throw std::runtime_error("inv scale factor " + std::to_string( inv_scale_factors[ i ]) + "invalid" );
         }
+
+        printf("downsample size h=%d w=%d\n", \
+            downsample_image.size().height, downsample_image.size().width ); fflush(stdout);
     }
 }
 
@@ -90,6 +111,7 @@ static void upsample_alignment_stride( \
     }
 }
 
+
 template <typename T>
 void print_tile( const cv::Mat& img, int tile_size, int start_idx_x, int start_idx_y )
 {
@@ -109,6 +131,7 @@ void print_tile( const cv::Mat& img, int tile_size, int start_idx_x, int start_i
     }
     printf("\n");
 }
+
 
 void align_image_level( \
     const cv::Mat& ref_img, \
@@ -230,6 +253,10 @@ static void build_per_pyramid_reftiles_start( \
 void align::process( const hdrplus::burst& burst_images, \
                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& images_alignment )
 {
+    #ifndef NDEBUG
+    printf("%s::%s align::process start\n", __FILE__, __func__ );
+    #endif
+
     // image pyramid per image, per pyramid level
     std::vector<std::vector<cv::Mat>> per_grayimg_pyramid;
 
@@ -238,9 +265,9 @@ void align::process( const hdrplus::burst& burst_images, \
     {
         // per_grayimg_pyramid[ img_idx ][ 0 ] is the original image
         // per_grayimg_pyramid[ img_idx ][ 3 ] is the coarsest image
-        build_per_grayimg_pyramid( per_grayimg_pyramid[ img_idx ], \
-                                   burst_images.grayscale_images_pad[ img_idx ], \
-                                   inv_scale_factors );
+        build_per_grayimg_pyramid( per_grayimg_pyramid.at( img_idx ), \
+                                   burst_images.grayscale_images_pad.at( img_idx ), \
+                                   this->inv_scale_factors );
     }
 
     #ifndef NDEBUG

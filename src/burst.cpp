@@ -11,7 +11,18 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
 {
     std::vector<cv::String> bayer_image_paths;
     // Search through the input path directory to get all input image path
-    cv::glob( burst_path + "/*.dng", bayer_image_paths, false );
+    if ( burst_path.at( burst_path.size() - 1) == '/')
+        cv::glob( burst_path + "*.dng", bayer_image_paths, false );
+    else
+        cv::glob( burst_path + "/*.dng", bayer_image_paths, false );
+
+    #ifndef NDEBUG
+    for ( const auto& bayer_img_path_i : bayer_image_paths )
+    {
+        printf("img i path %s\n", bayer_img_path_i.c_str()); fflush(stdout);
+    }
+    printf("ref img path %s\n", reference_image_path.c_str()); fflush(stdout);
+    #endif
 
     // Number of images
     num_images = bayer_image_paths.size();
@@ -54,11 +65,11 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     int tile_size_bayer = 32;
     int padding_top = tile_size_bayer / 2;
     int padding_bottom = tile_size_bayer / 2 + \
-        ( bayer_images[ 0 ].height % tile_size_bayer == 0 ? \
+        ( (bayer_images[ 0 ].height % tile_size_bayer) == 0 ? \
         0 : tile_size_bayer - bayer_images[ 0 ].height % tile_size_bayer );
     int padding_left = tile_size_bayer / 2;
     int padding_right = tile_size_bayer / 2 + \
-        ( bayer_images[ 0 ].width % tile_size_bayer == 0 ? \
+        ( (bayer_images[ 0 ].width % tile_size_bayer) == 0 ? \
         0 : tile_size_bayer - bayer_images[ 0 ].width % tile_size_bayer );
     padding_info_bayer = std::vector<int>{ padding_top, padding_bottom, padding_left, padding_right };
 
@@ -83,6 +94,9 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
         bayer_images[ 0 ].width, \
         bayer_images_pad[ 0 ].size().height, \
         bayer_images_pad[ 0 ].size().width );
+    printf("%s::%s pad top %d, buttom %d, left %d, right %d\n", \
+        __FILE__, __func__, \
+        padding_top, padding_bottom, padding_left, padding_right );
     #endif
 }
 

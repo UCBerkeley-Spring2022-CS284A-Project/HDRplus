@@ -37,12 +37,6 @@ message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
 message(STATUS "Found Exiv2 and linked")
 
-if(NOT APPLE)
-  # The clang compiler (on osx) is somehow much more strict
-  # than the compilers on ubuntu and so this does not seem
-  # possible on OSX just yet.
-  add_definitions( -Werror )
-endif()
 
 # library
 include_directories( include )
