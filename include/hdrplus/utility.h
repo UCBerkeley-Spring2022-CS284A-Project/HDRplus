@@ -76,10 +76,10 @@ cv::Mat box_filter_kxk( cv::Mat src_image )
         {
             T box_sum = T(0);
 
-            #pragma LOOP_UNROLL
+            //#pragma LOOP_UNROLL
             for ( int kernel_row_i = 0; kernel_row_i < kernel; ++kernel_row_i )
             {
-                #pragma LOOP_UNROLL
+                //#pragma LOOP_UNROLL
                 for ( int kernel_col_i = 0; kernel_col_i < kernel; ++kernel_col_i )
                 {
                     box_sum += src_image_ptr[ ( row_i + kernel_row_i ) * src_step + ( col_i + kernel_col_i ) ];

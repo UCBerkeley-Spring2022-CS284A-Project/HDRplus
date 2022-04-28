@@ -34,4 +34,17 @@ class align
         const int num_levels = 4;
 };
 
+void align_image_level( \
+    const cv::Mat& ref_img, \
+    const cv::Mat& alt_img, \
+    const std::vector<std::vector<std::pair<int, int>>>& reftiles_start, \
+    std::vector<std::vector<std::pair<int, int>>>& prev_aligement, \
+    std::vector<std::vector<std::pair<int, int>>>& alignment, \
+    int scale_factor_prev_curr, \
+    int tile_size, \
+    int prev_tile_size, \
+    int search_radiou, \
+    int distance );
+
+
 } // namespace hdrplus

@@ -8,7 +8,7 @@
 
 2. LibRaw
    1. MacOS : `brew install libraw libpng libjpeg`
-   2. Ubuntu : 
+   2. Ubuntu : `sudo apt install libraw-dev`
    
       step 1: download libraw package here: https://www.libraw.org/download
       

@@ -78,7 +78,7 @@ std::pair<double, double> bayer_image::get_noise_params() const
 	double lambda_read_p = (iso_ / 100.0f) * (iso_ / 100.0f) * baseline_lambda_read;
 
     double black_level = (black_level_per_channel[0] + \
-                       black_level_per_channel[1] + \ 
+                       black_level_per_channel[1] + \
                        black_level_per_channel[2] + \
                        black_level_per_channel[3]) / 4.0;
 
