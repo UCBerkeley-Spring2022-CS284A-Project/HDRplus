@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <opencv2/opencv.hpp> // all opencv header
+#include <cmath>
 #include "hdrplus/burst.h"
 
 namespace hdrplus
@@ -26,6 +27,35 @@ class merge
          */
         void process( const hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments);
+        
+    private:
+        cv::Mat cosineWindow1D(cv::Mat input, int window_size = 16) {
+            cv::Mat output = input.clone();
+            for (int i = 0; i < input.cols; ++i) {
+                output.at<float>(0, i) = 1. / 2. - 1. / 2. * cos(2 * M_PI * (input.at<float>(0, i) + 1 / 2.) / window_size);
+            }
+            return output;
+        }
+
+        cv::Mat cosineWindow2D(cv::Mat tile) {
+            int window_size = tile.rows; // Assuming square tile
+            cv::Mat output_tile = tile.clone();
+
+            cv::Mat window = cv::Mat::zeros(1, window_size, CV_32F);
+            for(int i = 0; i < window_size; ++i) {
+                window.at<float>(i) = i;
+            }
+
+            cv::Mat window_x = cosineWindow1D(window, window_size);
+            window_x = cv::repeat(window_x, window_size, 1);
+            cv::Mat window_2d = window_x.mul(window_x.t());
+
+            cv::Mat window_applied;
+            cv::multiply(tile, window_2d, window_applied, 1, CV_32F);
+            return window_applied;
+        }
+
+        std::vector<cv::Mat> getReferenceTiles(cv::Mat reference_image);
 };
 
 } // namespace hdrplus
