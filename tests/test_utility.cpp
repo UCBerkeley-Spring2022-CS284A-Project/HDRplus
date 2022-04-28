@@ -4,9 +4,10 @@
 #include <opencv2/opencv.hpp>
 #include "hdrplus/utility.h"
 
-void test_box_filter_2x2()
+
+void test_downsample_nearest_neighbour( )
 {
-    printf("\n###Test test_box_filter_2x2()###\n");
+    printf("\n###Test test_box_filter_kxk()###\n");
     // Intialize input data
     int src_width = 10;
     int src_height = 6;
@@ -23,13 +24,19 @@ void test_box_filter_2x2()
     printf("src cv::Mat is \n");
     hdrplus::print_cvmat<uint16_t>( src_image );
 
-    cv::Mat dst_image = hdrplus::box_filter_2x2<uint16_t>( src_image );
+    cv::Mat dst_image = hdrplus::downsample_nearest_neighbour<uint16_t, 2>( src_image );
 
-    printf("dst cv::Mat is \n");
+    printf("dst cv::Mat downsample nn 2x2 is \n");
     hdrplus::print_cvmat<uint16_t>( dst_image );
 
-    printf("test_box_filter_2x2 finish\n"); fflush(stdout);
+    dst_image = hdrplus::downsample_nearest_neighbour<uint16_t, 4>( src_image );
+
+    printf("dst cv::Mat downsample nn 4x4 is \n");
+    hdrplus::print_cvmat<uint16_t>( dst_image );
+
+    printf("test_downsample_nearest_neighbour finish\n"); fflush(stdout);
 }
+
 
 void test_box_filter_kxk()
 {
@@ -104,7 +111,7 @@ void test_extract_rgb_from_bayer()
 
 int main()
 {
-    test_box_filter_2x2();
+    test_downsample_nearest_neighbour();
     test_box_filter_kxk();
     test_extract_rgb_from_bayer();
 
