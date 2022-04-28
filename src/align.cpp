@@ -11,6 +11,7 @@
 namespace hdrplus
 {
 
+
 // static function only visible within file
 static void build_per_grayimg_pyramid( \
     std::vector<cv::Mat>& images_pyramid, \
@@ -100,18 +101,78 @@ static void upsample_alignment_stride( \
 }
 
 
+// Set tilesize as template argument for better compiler optimization result.
+template< typename T, int tile_size >
+static T l1_distance( const cv::Mat& img1, const cv::Mat& img2, \
+    int img1_tile_row_start_idx, int img1_tile_col_start_idx, \
+    int img2_tile_row_start_idx, int img2_tile_col_start_idx )
+{
+    #define CUSTOME_ABS( x ) ( x ) > 0 ? ( x ) : - ( x )
+
+    const T* img1_ptr = (const T*)img1.data;
+    const T* img2_ptr = (const T*)img2.data;
+
+    int img1_step = img1.step1();
+    int img2_step = img2.step1();
+
+    int img1_width = img1.size().width;
+    int img1_height = img1.size().height;
+
+    int img2_width = img2.size().width;
+    int img2_height = img2.size().height;
+
+    // Range check for safety
+    if ( img1_tile_row_start_idx < 0 || img1_tile_row_start_idx > img1_height - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+    }
+
+    if ( img1_tile_col_start_idx < 0 || img1_tile_col_start_idx > img1_width - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+    }
+
+    if ( img2_tile_row_start_idx < 0 || img2_tile_row_start_idx > img2_height - tile_size )
+    {
+        throw std::runtime_error("l1 distance img2_tile_row_start_idx out of valid range\n");
+    }
+
+    if ( img2_tile_col_start_idx < 0 || img2_tile_col_start_idx > img2_width - tile_size )
+    {
+        throw std::runtime_error("l1 distance img2_tile_col_start_idx out of valid range\n");
+    }
+
+    T sum(0);
+    // TODO: add pragma unroll here
+    for ( int row_i = 0; row_i < tile_size; ++row_i )
+    {
+        const T* img1_ptr_row_i = img1_ptr + img1_tile_row_start_idx * img1_step + img1_tile_col_start_idx;
+        const T* img2_ptr_row_i = img2_ptr + img2_tile_row_start_idx * img2_step + img2_tile_col_start_idx;
+
+        for ( int col_i = 0; col_i < tile_size; ++col_i )
+        {
+            sum += CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
+        }
+    }
+
+    #undef CUSTOME_ABS
+
+    return sum;
+}
+
+
 template <typename T>
-void print_tile( const cv::Mat& img, int tile_size, int start_idx_x, int start_idx_y )
+void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
 {
     const T* img_ptr = (T*)img.data;
     int src_height = img.size().height;
     int src_width  = img.size().width;
     int src_step   = img.step1();
 
-    for ( int row = start_idx_x; row < tile_size + start_idx_x; ++row )
+    for ( int row = start_idx_row; row < tile_size + start_idx_row; ++row )
     {
         const T* img_ptr_row = img_ptr + row * src_step;
-        for ( int col = start_idx_y; col < tile_size + start_idx_y; ++col )
+        for ( int col = start_idx_col; col < tile_size + start_idx_col; ++col )
         {
             printf("%u ", img_ptr_row[ col ] );
         }
@@ -168,6 +229,9 @@ void align_image_level( \
     int num_tiles_h = ref_img.size().height / (tile_size / 2) - 1;
     int num_tiles_w = ref_img.size().width / (tile_size / 2 ) - 1 ;
 
+    // Every align image level share the same distance function. 
+    uint16_t(*)(const cv::Mat&, const cv::Mat&, int, int, int, int) distance_func_ptr = nullptr;
+
     #ifndef NDEBUG
     printf("%s::%s start: \n", __FILE__, __func__ );
     printf("    scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance L%d, \n", \
@@ -177,7 +241,7 @@ void align_image_level( \
     printf("    num tile h %d, num tile w %d\n", num_tiles_h, num_tiles_w);
     #endif
 
-    printf("Reference image : \n");
+    printf("Reference image h=%d, w=%d: \n", ref_img.size().height, ref_img.size().width );
     print_img<uint16_t>( ref_img );
 
     /* Upsample pervious layer alignment */
@@ -187,6 +251,7 @@ void align_image_level( \
     // prev_alignment is invalid / empty, construct alignment as (0,0)
     if ( prev_tile_size == -1 )
     {
+        printf("create empty prev alignment\n");
         upsampled_prev_aligement.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
     }
     // Upsample previous level alignment 
@@ -215,26 +280,84 @@ void align_image_level( \
                         search_radiou, search_radiou, search_radiou, search_radiou, \
                         cv::BORDER_CONSTANT, cv::Scalar( UINT_LEAST16_MAX ) );
 
+    printf("Alter image pad h=%d, w=%d: \n", alt_img_pad.size().height, alt_img_pad.size().width );
+    print_img<uint16_t>( alt_img_pad );
+
+    printf("!! enlarged tile size %d\n", tile_size + 2 * search_radiou );
+
+    int alt_tile_row_idx_max = alt_img_pad.size().height - ( tile_size + 2 * search_radiou );
+    int alt_tile_col_idx_max = alt_img_pad.size().width  - ( tile_size + 2 * search_radiou );
+
     /* Iterate through all reference tile & compute distance */
-    for ( int ref_tile_row = 0; ref_tile_row < num_tiles_h; ref_tile_row++ )
+    for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
     {
-        for ( int ref_tile_col = 0; ref_tile_col < num_tiles_w; ref_tile_col++ )
+        for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
         {
             // Upper left index of reference tile
-            int ref_tile_idx_x = ref_tile_row * tile_size / 2;
-            int ref_tile_idx_y = ref_tile_col * tile_size / 2;
+            int ref_tile_row_start_idx_i = ref_tile_row_i * tile_size / 2;
+            int ref_tile_col_start_idx_i = ref_tile_col_i * tile_size / 2;
+
+            printf("Ref img tile [%d, %d] -> start idx [%d, %d] (row, col)\n", \
+                ref_tile_row_i, ref_tile_col_i, ref_tile_row_start_idx_i, ref_tile_col_start_idx_i );
+
+            print_tile<uint16_t>( ref_img, 8, ref_tile_row_start_idx_i, ref_tile_col_start_idx_i );
 
             // Upsampled alignment at this tile
-            // int prev_alignment_x = upsampled_prev_aligement.at( ref_tile_row ).at( ref_tile_col ).first;
-            // int prev_alignment_y = upsampled_prev_aligement.at( ref_tile_row ).at( ref_tile_col ).second;
+            int prev_alignment_row = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).first;
+            int prev_alignment_col = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).second;
 
-            // int alt_tile_idx_x = ref_tile_idx_x + prev_alignment_x;
-            // int alt_tile_idx_y = ref_tile_idx_y + prev_alignment_y;
+            // Alternative image tile start idx
+            int alt_tile_row_start_idx_i = ref_tile_row_start_idx_i + prev_alignment_row;
+            int alt_tile_col_start_idx_i = ref_tile_col_start_idx_i + prev_alignment_col;
 
-            printf("Ref img tile [%d, %d] -> start [%d, %d]\n", \
-                ref_tile_row, ref_tile_col, ref_tile_idx_x, ref_tile_idx_y );
+            // Ensure alternative image tile within range
+            if ( alt_tile_row_start_idx_i < 0 )
+                alt_tile_row_start_idx_i = 0;
+            if ( alt_tile_col_start_idx_i < 0 )
+                alt_tile_col_start_idx_i = 0;
+            if ( alt_tile_row_start_idx_i > alt_tile_row_idx_max )
+            {
+                int before = alt_tile_row_start_idx_i;
+                alt_tile_row_start_idx_i = alt_tile_row_idx_max;
+                printf("@@ change start x from %d to %d\n", before, alt_tile_row_idx_max);
+            }
+            if ( alt_tile_col_start_idx_i > alt_tile_col_idx_max )
+            {
+                int before = alt_tile_col_start_idx_i;
+                alt_tile_col_start_idx_i = alt_tile_col_idx_max;
+                printf("@@ change start y from %d to %d\n", before, alt_tile_col_idx_max );
+            }
 
-            print_tile<uint16_t>( ref_img, 8, ref_tile_idx_x, ref_tile_idx_y );
+            // Because alternative image is padded with search radious. 
+            // Using same coordinate with reference image will automatically considered search radious * 2
+            printf("Alt image tile [%d, %d]-> start idx [%d, %d]\n", 
+                ref_tile_row_i, ref_tile_col_i, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+            print_tile<uint16_t>( alt_img_pad, 16, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+
+            // Search based on L1/L2 distance
+            uint16_t min_distance = UINT_LEAST16_MAX;
+            int min_distance_row_i = -1;
+            int min_distance_col_i = -1;
+            for ( int search_row_i = 0; search_row_i < search_radiou * 2; search_row_i++ )
+            {
+                for ( int search_col_i = 0; search_col_i < search_radiou * 2; search_col_i++ )
+                {
+                    uint16_t distance_i = l1_distance<uint16_t, 8>( ref_img, alt_img_pad, \
+                        ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
+                        alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+
+                    // If this is smaller distance
+                    if ( distance_i < min_distance )
+                    {
+                        min_distance = distance_i;
+                        min_distance_col_i = search_col_i;
+                        min_distance_row_i = search_row_i;
+                    }
+                }
+            }
+
+            // Add min_distance's corresbonding idx as min
+
         }
     }
 
@@ -304,11 +427,11 @@ void align::process( const hdrplus::burst& burst_images, \
     printf("\n"); fflush(stdout);
     #endif
 
-    for ( int level_i; level_i < num_levels; ++level_i )
-    {
-        printf("level %d img : \n" , level_i );
-        print_img<uint16_t>( per_grayimg_pyramid[ burst_images.reference_image_idx ][ level_i], 100, 100 );
-    }
+    // for ( int level_i; level_i < num_levels; ++level_i )
+    // {
+    //     printf("level %d img : \n" , level_i );
+    //     print_img<uint16_t>( per_grayimg_pyramid[ burst_images.reference_image_idx ][ level_i], 100, 100 );
+    // }
 
     // Align every image
     const std::vector<cv::Mat>& ref_grayimg_pyramid = per_grayimg_pyramid[ burst_images.reference_image_idx ];
