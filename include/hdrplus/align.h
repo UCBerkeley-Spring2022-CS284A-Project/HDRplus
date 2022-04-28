@@ -29,8 +29,8 @@ class align
         // From original image to coarse image
         const std::vector<int> inv_scale_factors = { 1, 2, 4, 4 };
         const std::vector<int> distances = { 1, 2, 2, 2 }; // L1 / L2 distance
-        const std::vector<int> search_radious = { 1, 4, 4, 4 };
-        const std::vector<int> tile_sizes = { 16, 16, 16, 8 };
+        const std::vector<int> grayimg_search_radious = { 1, 4, 4, 4 };
+        const std::vector<int> grayimg_tile_sizes = { 16, 16, 16, 8 };
         const int num_levels = 4;
 };
 
