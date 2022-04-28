@@ -19,12 +19,12 @@ void print_cvmat( cv::Mat image )
     }
 }
 
-void test_box_filter_2x2()
+void test_downsample_nearest_neighbour( )
 {
-    printf("\n###Test test_box_filter_2x2()###\n");
+    printf("\n###Test test_box_filter_kxk()###\n");
     // Intialize input data
-    int src_width = 10;
-    int src_height = 6;
+    int src_width = 12;
+    int src_height = 8;
     std::vector<uint16_t> src_data( src_width, src_height );
 
     for ( int i = 0; i < src_width * src_height; ++i )
@@ -38,11 +38,17 @@ void test_box_filter_2x2()
     printf("src cv::Mat is \n");
     print_cvmat<uint16_t>( src_image );
 
-    cv::Mat dst_image = hdrplus::box_filter_2x2<uint16_t>( src_image );
+    cv::Mat dst_image = hdrplus::downsample_nearest_neighbour<uint16_t, 2>( src_image );
 
-    printf("dst cv::Mat is \n");
+    printf("dst cv::Mat downsample nn 2x2 is \n");
+    print_cvmat<uint16_t>( dst_image );
+
+    dst_image = hdrplus::downsample_nearest_neighbour<uint16_t, 4>( src_image );
+
+    printf("dst cv::Mat downsample nn 4x4 is \n");
     print_cvmat<uint16_t>( dst_image );
 }
+
 
 void test_box_filter_kxk()
 {
@@ -77,6 +83,6 @@ void test_box_filter_kxk()
 
 int main()
 {
-    test_box_filter_2x2();
+    test_downsample_nearest_neighbour();
     test_box_filter_kxk();
 }

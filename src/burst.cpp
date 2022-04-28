@@ -84,7 +84,7 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
 
         // cv::Mat use internal reference count
         bayer_images_pad.emplace_back( bayer_image_pad_i );
-        grayscale_images_pad.emplace_back( box_filter_2x2<uint16_t>( bayer_image_pad_i ) );
+        grayscale_images_pad.emplace_back( box_filter_kxk<uint16_t, 2>( bayer_image_pad_i ) );
     } 
 
     #ifndef NDEBUG

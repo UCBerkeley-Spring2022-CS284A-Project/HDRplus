@@ -7,7 +7,7 @@
 #include <libraw/libraw.h>
 #include <exiv2/exiv2.hpp> // exiv2
 #include "hdrplus/bayer_image.h"
-#include "hdrplus/utility.h" // box_filter_2x2
+#include "hdrplus/utility.h" // box_filter_kxk
 namespace hdrplus
 {
 
@@ -58,7 +58,7 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     raw_image = cv::Mat( height, width, CV_16U, libraw_processor->imgdata.rawdata.raw_image ).clone(); // changed the order of width and height
 
     // 2x2 box filter
-    grayscale_image = box_filter_2x2<uint16_t>( raw_image );
+    grayscale_image = box_filter_kxk<uint16_t, 2>( raw_image );
 
     #ifndef NDEBUG
     printf("%s::%s read bayer image %s with\n width %zu\n height %zu\n iso %.3f\n white level %d\n black level %d %d %d %d\n", \

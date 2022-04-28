@@ -28,49 +28,37 @@ static void build_per_grayimg_pyramid( \
 
     images_pyramid.resize( inv_scale_factors.size() );
 
-    cv::Mat blur_image;
-    cv::Mat downsample_image;
-
     for ( int i = 0; i < inv_scale_factors.size(); ++i )
     {
-        printf("inv scale factor %d\n", inv_scale_factors.at( i ) );
+        cv::Mat blur_image;
+        cv::Mat downsample_image;
 
         switch ( inv_scale_factors[ i ] )
         {
         case 1:
-            images_pyramid[ images_pyramid.size() - i - 1 ] = src_image;
+            images_pyramid[ i ] = src_image.clone();
             // cv::Mat use reference count, will not create deep copy
             downsample_image = src_image;
             break;
         case 2:
-            printf("gaussian blur 2 start\n"); fflush(stdout);
-
             // Gaussian blur
-            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
-
-            printf("gaussian blur 2 done\n"); fflush(stdout);
+            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
         
             // Downsample
             downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
 
             // Add
-            images_pyramid[ images_pyramid.size() - i - 1 ] = downsample_image;
+            images_pyramid.at( i ) = downsample_image.clone();
 
             break;
         case 4:
-            printf("gaussian blur 4 start\n"); fflush(stdout);
-            cv::GaussianBlur( downsample_image, blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
-            printf("gaussian blur 4 done\n"); fflush(stdout);
-
+            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] / 2 );
             downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
-            images_pyramid[ images_pyramid.size() - i - 1 ] = downsample_image;
+            images_pyramid.at( i ) = downsample_image.clone();
             break;
         default:
             throw std::runtime_error("inv scale factor " + std::to_string( inv_scale_factors[ i ]) + "invalid" );
-        }
-
-        printf("downsample size h=%d w=%d\n", \
-            downsample_image.size().height, downsample_image.size().width ); fflush(stdout);
+        } 
     }
 }
 
@@ -120,12 +108,44 @@ void print_tile( const cv::Mat& img, int tile_size, int start_idx_x, int start_i
     int src_width  = img.size().width;
     int src_step   = img.step1();
 
-    for ( int row = 0; row < tile_size; ++row )
+    for ( int row = start_idx_x; row < tile_size + start_idx_x; ++row )
     {
         const T* img_ptr_row = img_ptr + row * src_step;
-        for ( int col = 0; col < tile_size; ++col )
+        for ( int col = start_idx_y; col < tile_size + start_idx_y; ++col )
         {
-            printf("%d ", img_ptr_row[ col ] );
+            printf("%u ", img_ptr_row[ col ] );
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
+template< typename T>
+void print_img( const cv::Mat& img, int img_height = -1, int img_width = -1 )
+{
+    const T* img_ptr = (T*)img.data;
+    if ( img_height == -1 && img_width == -1 )
+    {
+        img_height = img.size().height;
+        img_width = img.size().width;
+    }
+    else
+    {
+        img_height = std::min( img.size().height, img_height );
+        img_width = std::min( img.size().width, img_width );
+    }
+    printf("Image size (h=%d, w=%d), Print range (h=0-%d, w=0-%d)]\n", \
+        img.size().height, img.size().width, img_height, img_width );
+
+    int img_step = img.step1();
+
+    for ( int row = 0; row < img_height; ++row )
+    {
+        const T* img_ptr_row = img_ptr + row * img_step;
+        for ( int col = 0; col < img_width; ++col )
+        {
+            printf("%u ", img_ptr_row[ col ]);
         }
         printf("\n");
     }
@@ -136,7 +156,6 @@ void print_tile( const cv::Mat& img, int tile_size, int start_idx_x, int start_i
 void align_image_level( \
     const cv::Mat& ref_img, \
     const cv::Mat& alt_img, \
-    const std::vector<std::vector<std::pair<int, int>>>& reftiles_start, \
     std::vector<std::vector<std::pair<int, int>>>& prev_aligement, \
     std::vector<std::vector<std::pair<int, int>>>& alignment, \
     int scale_factor_prev_curr, \
@@ -145,18 +164,21 @@ void align_image_level( \
     int search_radiou, \
     int distance )
 {
+    /* Basic infos */
+    int num_tiles_h = ref_img.size().height / (tile_size / 2) - 1;
+    int num_tiles_w = ref_img.size().width / (tile_size / 2 ) - 1 ;
+
     #ifndef NDEBUG
-    printf("%s::%s align_image_level : ", __FILE__, __func__ );
-    printf("scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance %d", \
+    printf("%s::%s start: \n", __FILE__, __func__ );
+    printf("    scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance L%d, \n", \
         scale_factor_prev_curr, tile_size, prev_tile_size, search_radiou, distance );
-    printf("\n");
+    printf("    ref img size h=%d w=%d, alt img size h=%d w=%d, \n", \
+        ref_img.size().height, ref_img.size().width, alt_img.size().height, alt_img.size().width );
+    printf("    num tile h %d, num tile w %d\n", num_tiles_h, num_tiles_w);
     #endif
 
-    /* Basic infos */
-    int num_tiles_h = reftiles_start.size();
-    int num_tiles_w = reftiles_start.at( 0 ).size();
-
-    printf("num tile h %d, num tile w %d\n", num_tiles_h, num_tiles_w);
+    printf("Reference image : \n");
+    print_img<uint16_t>( ref_img );
 
     /* Upsample pervious layer alignment */
     std::vector<std::vector<std::pair<int, int>>> upsampled_prev_aligement;
@@ -199,8 +221,8 @@ void align_image_level( \
         for ( int ref_tile_col = 0; ref_tile_col < num_tiles_w; ref_tile_col++ )
         {
             // Upper left index of reference tile
-            int ref_tile_idx_x = reftiles_start.at( ref_tile_row ).at( ref_tile_col ).first;
-            int ref_tile_idx_y = reftiles_start.at( ref_tile_row ).at( ref_tile_col ).second;
+            int ref_tile_idx_x = ref_tile_row * tile_size / 2;
+            int ref_tile_idx_y = ref_tile_col * tile_size / 2;
 
             // Upsampled alignment at this tile
             // int prev_alignment_x = upsampled_prev_aligement.at( ref_tile_row ).at( ref_tile_col ).first;
@@ -209,7 +231,9 @@ void align_image_level( \
             // int alt_tile_idx_x = ref_tile_idx_x + prev_alignment_x;
             // int alt_tile_idx_y = ref_tile_idx_y + prev_alignment_y;
 
-            printf("Ref img tile [%d, %d]\n", ref_tile_row, ref_tile_col );
+            printf("Ref img tile [%d, %d] -> start [%d, %d]\n", \
+                ref_tile_row, ref_tile_col, ref_tile_idx_x, ref_tile_idx_y );
+
             print_tile<uint16_t>( ref_img, 8, ref_tile_idx_x, ref_tile_idx_y );
         }
     }
@@ -254,7 +278,7 @@ void align::process( const hdrplus::burst& burst_images, \
                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& images_alignment )
 {
     #ifndef NDEBUG
-    printf("%s::%s align::process start\n", __FILE__, __func__ );
+    printf("%s::%s align::process start\n", __FILE__, __func__ ); fflush(stdout);
     #endif
 
     // image pyramid per image, per pyramid level
@@ -277,16 +301,14 @@ void align::process( const hdrplus::burst& burst_images, \
         printf("(%d, %d) ", per_grayimg_pyramid[ 0 ][ level_i ].size().height,
                             per_grayimg_pyramid[ 0 ][ level_i ].size().width );
     }
-    printf("\n");
+    printf("\n"); fflush(stdout);
     #endif
 
-    // Tile starting location for each tile level
-    std::vector<std::vector<std::vector<std::pair<int, int>>>> per_pyramid_reftiles_start;
-
-    build_per_pyramid_reftiles_start( \
-        per_pyramid_reftiles_start, \
-        per_grayimg_pyramid, \
-        grayimg_tile_sizes );
+    for ( int level_i; level_i < num_levels; ++level_i )
+    {
+        printf("level %d img : \n" , level_i );
+        print_img<uint16_t>( per_grayimg_pyramid[ burst_images.reference_image_idx ][ level_i], 100, 100 );
+    }
 
     // Align every image
     const std::vector<cv::Mat>& ref_grayimg_pyramid = per_grayimg_pyramid[ burst_images.reference_image_idx ];
@@ -308,7 +330,6 @@ void align::process( const hdrplus::burst& burst_images, \
             align_image_level(
                 ref_grayimg_pyramid[ level_i ],    // reference image at current level
                 alt_grayimg_pyramid[ level_i ],    // alternative image at current level
-                per_pyramid_reftiles_start[ level_i ], // reference tile start location for current level
                 prev_alignment,                    // previous layer alignment
                 curr_alignment,                    // current layer alignment
                 ( level_i == ( num_levels - 1 ) ? -1 : inv_scale_factors[ level_i ] ),                 // scale factor between previous layer and current layer. -1 if current layer is the coarsest layer
