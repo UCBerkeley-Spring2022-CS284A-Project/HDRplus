@@ -43,7 +43,8 @@ cv::Mat box_filter_kxk( const cv::Mat& src_image )
     {
         for ( int col_i = 0; col_i < dst_width; col_i++ )
         {
-            T box_sum = T(0);
+            // Take ceiling for rounding
+            T box_sum = T( kernel * kernel - 1 );
             //#pragma LOOP_UNROLL
             for ( int kernel_row_i = 0; kernel_row_i < kernel; ++kernel_row_i )
             {
