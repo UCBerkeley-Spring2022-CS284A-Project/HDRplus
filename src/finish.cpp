@@ -374,9 +374,6 @@ namespace hdrplus
         fusedg = fusedg*USHRT_MAX;
         fusedg.convertTo(fusedg, CV_16UC1);
         std::cout<<"--- Apply Mertens"<<std::endl;
-        // fusedg = convert8bit2_16bit_(fusedg);
-        // cv::imwrite("fusedg.png", fusedg);
-
         // undo gamma correction
         cv::Mat fusedGray = gammasRGB(fusedg.clone(), false);
         // cv::imwrite("fusedg_degamma.png", fusedGray);
@@ -384,6 +381,39 @@ namespace hdrplus
         // scale each RGB channel of the short exposure accordingly
         mergedImage = applyScaling_(mergedImage, shortGray, fusedGray);
         std::cout<<"--- Scale channels"<<std::endl;
+    }
+
+    u_int16_t enhanceContrast_1pix(u_int16_t pix_val,double gain){
+        double x = pix_val;
+        x/=USHRT_MAX;
+        x = x - gain*sin(2*M_PI*x);
+        if(x<0){
+            x = 0;
+        }else if(x>1){
+            x = 1;
+        }
+        u_int16_t result = x*USHRT_MAX;
+        return result;
+    }
+
+    cv::Mat enhanceContrast(cv::Mat image, Options options){
+        if(options.gtmContrast>=0 && options.gtmContrast<=0){
+            u_int16_t* ptr = (u_int16_t*)image.data;
+            int end = image.rows*image.cols*image.channels();
+            for(int idx = 0;idx<end;idx++){
+                *(ptr+idx) = enhanceContrast_1pix(*(ptr+idx),options.gtmContrast);
+            }
+            // cv::MatIterator_<cv::Vec3w> it, end;
+            // for( it = image.begin<cv::Vec3w>(), end = image.end<cv::Vec3w>(); it != end; ++it)
+            // {
+            //     for(int c=0;c<image.channels();c++){
+            //         (*it)[c] = enhanceContrast_1pix((*it)[c],options.gtmContrast);
+            //     }
+            // }
+        }else{
+            std::cout<<"GTM ignored, expected a contrast enhancement ratio between 0 and 1"<<std::endl;
+        }
+        return image;
     }
 
     void Finish::pipeline_finish(){
@@ -470,13 +500,24 @@ namespace hdrplus
                 cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
                 cv::imwrite("ltmGain_gamma.jpg", outputImg);
             }
-            
         }
 
+// step 6 GTM: contrast enhancement / global tone mapping
+        if(params.options.gtmContrast){
+            processedMerge = enhanceContrast(processedMerge, params.options);
+            std::cout<<"STEP 6 -- Apply GTM"<<std::endl;
+        }
 
-        // if(processedMerge.type()==CV_16UC3){
-        //     std::cout<<"processedMerge.type = 16UC3"<<std::endl;
-        // }
+        // apply the final sRGB gamma curve
+        processedMerge = gammasRGB(processedMerge.clone(),true);
+        std::cout<<"-- Apply Gamma"<<std::endl;
+
+        if(params.flags["writeGTMImage"]){
+                std::cout<<"writing GTMImage ..."<<std::endl;
+                cv::Mat outputImg = convert16bit2_8bit_(processedMerge.clone());
+                cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+                cv::imwrite("GTM_gamma.jpg", outputImg);
+            }
 
         
         
