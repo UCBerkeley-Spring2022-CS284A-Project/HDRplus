@@ -33,6 +33,32 @@ namespace hdrplus
         return ans;
     }
 
+    cv::Mat convert8bit2_16bit_(cv::Mat ans){
+        if(ans.type()==CV_8UC3){
+            ans.convertTo(ans, CV_16UC3);
+            cv::MatIterator_<cv::Vec3w> it, end;
+            for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
+            {
+                // std::cout<<sizeof (*it)[0] <<std::endl;
+                (*it)[0] *=(65535.0/255.0);
+                (*it)[1] *=(65535.0/255.0);
+                (*it)[2] *=(65535.0/255.0);
+            }
+            
+        }else if(ans.type()==CV_8UC1){
+            ans.convertTo(ans, CV_16UC1);
+            u_int16_t* ptr = (u_int16_t*)ans.data;
+            int end = ans.rows*ans.cols;
+            for(int i=0;i<end;i++){
+                *(ptr+i) *=(65535.0/255.0);
+            }
+            
+        }else{
+            std::cout<<"Unsupported Data Type"<<std::endl;
+        }
+        return ans;
+    }
+
     cv::Mat convert8bit2_12bit_(cv::Mat ans){
         // cv::Mat ans(I);
         cv::MatIterator_<cv::Vec3w> it, end;
@@ -261,21 +287,48 @@ namespace hdrplus
 
     }
 
-    void localToneMap(cv::Mat mergedImage, Options options, cv::Mat& shortg,
+    cv::Mat applyScaling_(cv::Mat mergedImage, cv::Mat shortGray, cv::Mat fusedGray){
+        cv::Mat result = mergedImage.clone();
+        u_int16_t* ptr_shortg = (u_int16_t*)shortGray.data;
+        u_int16_t* ptr_fusedg = (u_int16_t*)fusedGray.data;
+        int count = 0;
+        cv::MatIterator_<cv::Vec3w> it, end;
+        for( it = result.begin<cv::Vec3w>(), end = result.end<cv::Vec3w>(); it != end; ++it)
+        {
+            double s = 1;
+            if(*(ptr_shortg+count)!=0){
+                s = *(ptr_fusedg+count);
+                s/=*(ptr_shortg+count);
+            }
+            for(int c=0;c<mergedImage.channels();c++){
+                double tmp = (*it)[c]*s;
+                if(tmp<0){
+                    (*it)[c] = 0;
+                }else if(tmp>USHRT_MAX){
+                    (*it)[c] = USHRT_MAX;
+                }else{
+                    (*it)[c] = tmp;
+                }
+            }
+        }
+        return result;
+    }
+
+    void localToneMap(cv::Mat& mergedImage, Options options, cv::Mat& shortg,
          cv::Mat& longg, cv::Mat& fusedg, int& gain){
         std::cout<<"HDR Tone Mapping..."<<std::endl;
         // # Work with grayscale images
-        shortg = mean_(mergedImage);
+        cv::Mat shortGray = mean_(mergedImage);
         std::cout<<"--- Compute grayscale image"<<std::endl;
 
         // compute gain
         gain = 0;
         if(options.ltmGain==-1){
             double dsFactor = 25;
-            int down_height = round(shortg.rows/dsFactor);
-            int down_width = round(shortg.cols/dsFactor);
+            int down_height = round(shortGray.rows/dsFactor);
+            int down_width = round(shortGray.cols/dsFactor);
             cv::Mat shortS;
-            cv::resize(shortg,shortS,cv::Size(down_height,down_width),cv::INTER_LINEAR);
+            cv::resize(shortGray,shortS,cv::Size(down_height,down_width),cv::INTER_LINEAR);
             shortS = shortS.reshape(1,1);
 
             bool bestGain = false;
@@ -286,7 +339,7 @@ namespace hdrplus
 
             while((compression < 1.9 && saturated < .95)||((!bestGain) && (compression < 6) && (gain < 30) && (saturated < 0.33))){
                 gain += 2;
-                cv::Mat longSg = gammasRGB(matMultiply_scalar(shortS.clone(),gain), true);
+                cv::Mat longSg = gammasRGB(shortS.clone()*gain, true);
                 double lSMean = getMean(longSg);
                 compression = lSMean / sSMean;
                 bestGain = lSMean > (1 - sSMean) / 2;  // only works if burst underexposed
@@ -307,11 +360,30 @@ namespace hdrplus
         std::cout<<"--- Synthetic long expo"<<std::endl;
         // apply gamma correction to both
         longg = gammasRGB(longGray.clone(), true);
-        shortg = gammasRGB(shortg.clone(),true);
+        shortg = gammasRGB(shortGray.clone(),true);
         std::cout<<"--- Apply Gamma correction"<<std::endl;
         // perform tone mapping by exposure fusion in grayscale
-        
+        cv::Ptr<cv::MergeMertens> mergeMertens = cv::createMergeMertens();
+        std::cout<<"--- Create Mertens"<<std::endl;
+        // hack: cv2 mergeMertens expects inputs between 0 and 255
+	    // but the result is scaled between 0 and 1 (some values can actually be greater than 1!)
+        std::vector<cv::Mat> src_expos;
+        src_expos.push_back(convert16bit2_8bit_(shortg.clone()));
+        src_expos.push_back(convert16bit2_8bit_(longg.clone()));
+        mergeMertens->process(src_expos, fusedg);
+        fusedg = fusedg*USHRT_MAX;
+        fusedg.convertTo(fusedg, CV_16UC1);
+        std::cout<<"--- Apply Mertens"<<std::endl;
+        // fusedg = convert8bit2_16bit_(fusedg);
+        // cv::imwrite("fusedg.png", fusedg);
 
+        // undo gamma correction
+        cv::Mat fusedGray = gammasRGB(fusedg.clone(), false);
+        // cv::imwrite("fusedg_degamma.png", fusedGray);
+        std::cout<<"--- Un-apply Gamma correction"<<std::endl;
+        // scale each RGB channel of the short exposure accordingly
+        mergedImage = applyScaling_(mergedImage, shortGray, fusedGray);
+        std::cout<<"--- Scale channels"<<std::endl;
     }
 
     void Finish::pipeline_finish(){
@@ -379,6 +451,24 @@ namespace hdrplus
                 std::cout<<"writing LongExposure img ..."<<std::endl;
                 cv::Mat outputImg = convert16bit2_8bit_(longExposure);
                 cv::imwrite("longg.jpg", outputImg);
+            }
+            if(params.flags["writeFusedExposure"]){
+                std::cout<<"writing FusedExposure img ..."<<std::endl;
+                cv::Mat outputImg = convert16bit2_8bit_(fusedExposure);
+                cv::imwrite("fusedg.jpg", outputImg);
+            }
+            if(params.flags["writeLTMImage"]){
+                std::cout<<"writing LTMImage ..."<<std::endl;
+                cv::Mat outputImg = convert16bit2_8bit_(processedMerge.clone());
+                cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+                cv::imwrite("ltmGain.jpg", outputImg);
+            }
+            if(params.flags["writeLTMGamma"]){
+                std::cout<<"writing LTMImage Gamma ..."<<std::endl;
+                cv::Mat outputImg = gammasRGB(processedMerge.clone(),true);
+                outputImg = convert16bit2_8bit_(outputImg);
+                cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+                cv::imwrite("ltmGain_gamma.jpg", outputImg);
             }
             
         }
