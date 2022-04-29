@@ -2,6 +2,7 @@
 #include <string>
 #include <limits>
 #include <cstdio>
+#include <utility> // std::make_pair
 #include <stdexcept> // std::runtime_error
 #include <opencv2/opencv.hpp> // all opencv header
 #include "hdrplus/align.h"
@@ -278,38 +279,39 @@ void align_image_level( \
     const cv::Mat& ref_img, \
     const cv::Mat& alt_img, \
     std::vector<std::vector<std::pair<int, int>>>& prev_aligement, \
-    std::vector<std::vector<std::pair<int, int>>>& alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& curr_alignment, \
     int scale_factor_prev_curr, \
-    int tile_size, \
+    int curr_tile_size, \
     int prev_tile_size, \
     int search_radiou, \
-    int distance )
+    int distance_type )
 {
     /* Basic infos */
-    int num_tiles_h = ref_img.size().height / (tile_size / 2) - 1;
-    int num_tiles_w = ref_img.size().width / (tile_size / 2 ) - 1 ;
+    int num_tiles_h = ref_img.size().height / (curr_tile_size / 2) - 1;
+    int num_tiles_w = ref_img.size().width / (curr_tile_size / 2 ) - 1 ;
 
     // Every align image level share the same distance function. 
+    // Use function ptr to reduce if else overhead inside for loop
     uint16_t (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = nullptr;
 
-    if ( distance == 1 )
+    if ( distance_type == 1 ) // l1 distance
     {
-        if ( tile_size == 8 )
+        if ( curr_tile_size == 8 )
         {
             distance_func_ptr = &l1_distance<uint16_t, 8>;
         }
-        else if ( tile_size == 16 )
+        else if ( curr_tile_size == 16 )
         {
             distance_func_ptr = &l1_distance<uint16_t, 16>;
         }
     }
-    else if ( distance == 2 )
+    else if ( distance_type == 2 ) // l2 distance
     {
-        if ( tile_size == 8 )
+        if ( curr_tile_size == 8 )
         {
             distance_func_ptr = &l2_distance<uint16_t, 8>;
         }
-        else if ( tile_size == 16 )
+        else if ( curr_tile_size == 16 )
         {
             distance_func_ptr = &l2_distance<uint16_t, 16>;
         }
@@ -318,7 +320,7 @@ void align_image_level( \
     #ifndef NDEBUG
     printf("%s::%s start: \n", __FILE__, __func__ );
     printf("    scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance L%d, \n", \
-        scale_factor_prev_curr, tile_size, prev_tile_size, search_radiou, distance );
+        scale_factor_prev_curr, curr_tile_size, prev_tile_size, search_radiou, distance_type );
     printf("    ref img size h=%d w=%d, alt img size h=%d w=%d, \n", \
         ref_img.size().height, ref_img.size().width, alt_img.size().height, alt_img.size().width );
     printf("    num tile h %d, num tile w %d\n", num_tiles_h, num_tiles_w);
@@ -356,6 +358,9 @@ void align_image_level( \
         }
     }
 
+    // allocate memory for current alignmenr
+    curr_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
+
     /* Pad alternative image */
     cv::Mat alt_img_pad;
     cv::copyMakeBorder( alt_img, \
@@ -366,10 +371,10 @@ void align_image_level( \
     printf("Alter image pad h=%d, w=%d: \n", alt_img_pad.size().height, alt_img_pad.size().width );
     print_img<uint16_t>( alt_img_pad );
 
-    printf("!! enlarged tile size %d\n", tile_size + 2 * search_radiou );
+    printf("!! enlarged tile size %d\n", curr_tile_size + 2 * search_radiou );
 
-    int alt_tile_row_idx_max = alt_img_pad.size().height - ( tile_size + 2 * search_radiou );
-    int alt_tile_col_idx_max = alt_img_pad.size().width  - ( tile_size + 2 * search_radiou );
+    int alt_tile_row_idx_max = alt_img_pad.size().height - ( curr_tile_size + 2 * search_radiou );
+    int alt_tile_col_idx_max = alt_img_pad.size().width  - ( curr_tile_size + 2 * search_radiou );
 
     /* Iterate through all reference tile & compute distance */
     for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
@@ -377,8 +382,8 @@ void align_image_level( \
         for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
         {
             // Upper left index of reference tile
-            int ref_tile_row_start_idx_i = ref_tile_row_i * tile_size / 2;
-            int ref_tile_col_start_idx_i = ref_tile_col_i * tile_size / 2;
+            int ref_tile_row_start_idx_i = ref_tile_row_i * curr_tile_size / 2;
+            int ref_tile_col_start_idx_i = ref_tile_col_i * curr_tile_size / 2;
 
             printf("Ref img tile [%d, %d] -> start idx [%d, %d] (row, col)\n", \
                 ref_tile_row_i, ref_tile_col_i, ref_tile_row_start_idx_i, ref_tile_col_start_idx_i );
@@ -386,12 +391,12 @@ void align_image_level( \
             print_tile<uint16_t>( ref_img, 8, ref_tile_row_start_idx_i, ref_tile_col_start_idx_i );
 
             // Upsampled alignment at this tile
-            int prev_alignment_row = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).first;
-            int prev_alignment_col = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).second;
+            int prev_alignment_row_i = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).first;
+            int prev_alignment_col_i = upsampled_prev_aligement.at( ref_tile_row_i ).at( ref_tile_col_i ).second;
 
             // Alternative image tile start idx
-            int alt_tile_row_start_idx_i = ref_tile_row_start_idx_i + prev_alignment_row;
-            int alt_tile_col_start_idx_i = ref_tile_col_start_idx_i + prev_alignment_col;
+            int alt_tile_row_start_idx_i = ref_tile_row_start_idx_i + prev_alignment_row_i;
+            int alt_tile_col_start_idx_i = ref_tile_col_start_idx_i + prev_alignment_col_i;
 
             // Ensure alternative image tile within range
             if ( alt_tile_row_start_idx_i < 0 )
@@ -418,32 +423,51 @@ void align_image_level( \
             print_tile<uint16_t>( alt_img_pad, 16, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
 
             // Search based on L1/L2 distance
-            uint16_t min_distance = UINT_LEAST16_MAX;
+            uint16_t min_distance_i = UINT_LEAST16_MAX;
             int min_distance_row_i = -1;
             int min_distance_col_i = -1;
-            for ( int search_row_i = 0; search_row_i < search_radiou * 2; search_row_i++ )
+            for ( int search_row_j = 0; search_row_j < search_radiou * 2; search_row_j++ )
             {
-                for ( int search_col_i = 0; search_col_i < search_radiou * 2; search_col_i++ )
+                for ( int search_col_j = 0; search_col_j < search_radiou * 2; search_col_j++ )
                 {
-                    uint16_t distance_i = distance_func_ptr( ref_img, alt_img_pad, \
+                    uint16_t distance_j = distance_func_ptr( ref_img, alt_img_pad, \
                         ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
                         alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
 
                     // If this is smaller distance
-                    if ( distance_i < min_distance )
+                    if ( distance_j < min_distance_i )
                     {
-                        min_distance = distance_i;
-                        min_distance_col_i = search_col_i;
-                        min_distance_row_i = search_row_i;
+                        min_distance_i = distance_j;
+                        min_distance_col_i = search_col_j;
+                        min_distance_row_i = search_row_j;
                     }
                 }
             }
+            
+            printf("tile local (%d, %d) -> start idx(%d, %d)\n", \
+                ref_tile_row_i, ref_tile_col_i, min_distance_col_i, min_distance_row_i );
 
-            // Add min_distance's corresbonding idx as min
+            int alignment_row_i = prev_alignment_row_i + min_distance_row_i - search_radiou;
+            int alignment_col_i = prev_alignment_col_i + min_distance_col_i - search_radiou;
 
+            std::pair<int, int> alignment_i( alignment_row_i, alignment_col_i );
+
+            // Add min_distance_i's corresbonding idx as min
+            curr_alignment.at( ref_tile_row_i ).at( ref_tile_col_i ) = alignment_i;
         }
     }
 
+
+    printf("Alignment at current level\n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+        {
+            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+                tile_row, tile_col, tile_start.first, tile_start.second);
+        }
+    }
 }
 
 
