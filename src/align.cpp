@@ -102,6 +102,59 @@ static void upsample_alignment_stride( \
 }
 
 
+template <typename T>
+void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
+{
+    const T* img_ptr = (T*)img.data;
+    int src_height = img.size().height;
+    int src_width  = img.size().width;
+    int src_step   = img.step1();
+
+    for ( int row = start_idx_row; row < tile_size + start_idx_row; ++row )
+    {
+        const T* img_ptr_row = img_ptr + row * src_step;
+        for ( int col = start_idx_col; col < tile_size + start_idx_col; ++col )
+        {
+            printf("%u ", img_ptr_row[ col ] );
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
+template< typename T>
+void print_img( const cv::Mat& img, int img_height = -1, int img_width = -1 )
+{
+    const T* img_ptr = (T*)img.data;
+    if ( img_height == -1 && img_width == -1 )
+    {
+        img_height = img.size().height;
+        img_width = img.size().width;
+    }
+    else
+    {
+        img_height = std::min( img.size().height, img_height );
+        img_width = std::min( img.size().width, img_width );
+    }
+    printf("Image size (h=%d, w=%d), Print range (h=0-%d, w=0-%d)]\n", \
+        img.size().height, img.size().width, img_height, img_width );
+
+    int img_step = img.step1();
+
+    for ( int row = 0; row < img_height; ++row )
+    {
+        const T* img_ptr_row = img_ptr + row * img_step;
+        for ( int col = 0; col < img_width; ++col )
+        {
+            printf("%u ", img_ptr_row[ col ]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
 // Set tilesize as template argument for better compiler optimization result.
 template< typename data_type, typename return_type, int tile_size >
 static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2, \
@@ -145,12 +198,12 @@ static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2,
 
     return_type sum(0);
     // TODO: add pragma unroll here
-    for ( int row_i = 0; row_i < tile_size; ++row_i )
+    for ( int row_i = img1_tile_row_start_idx; row_i < (img1_tile_row_start_idx + tile_size); ++row_i )
     {
-        const T* img1_ptr_row_i = img1_ptr + img1_tile_row_start_idx * img1_step + img1_tile_col_start_idx;
-        const T* img2_ptr_row_i = img2_ptr + img2_tile_row_start_idx * img2_step + img2_tile_col_start_idx;
+        const data_type* img1_ptr_row_i = img1_ptr + row_i * img1_step;
+        const data_type* img2_ptr_row_i = img2_ptr + row_i * img2_step;
 
-        for ( int col_i = 0; col_i < tile_size; ++col_i )
+        for ( int col_i = img1_tile_col_start_idx; col_i < (img1_tile_col_start_idx + tile_size); ++col_i )
         {
             data_type l1 = CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
             sum += l1;
@@ -203,14 +256,19 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
         throw std::runtime_error("l1 distance img2_tile_col_start_idx out of valid range\n");
     }
 
+    printf("Search two tile with ref : \n");
+    print_tile<data_type>( img1, tile_size, img1_tile_row_start_idx, img1_tile_col_start_idx );
+    printf("Search two tile with alt :\n");
+    print_tile<data_type>( img2, tile_size, img2_tile_row_start_idx, img2_tile_col_start_idx );
+
     return_type sum(0);
     // TODO: add pragma unroll here
-    for ( int row_i = 0; row_i < tile_size; ++row_i )
+    for ( int row_i = img1_tile_row_start_idx; row_i < (img1_tile_row_start_idx + tile_size); ++row_i )
     {
-        const data_type* img1_ptr_row_i = img1_ptr + img1_tile_row_start_idx * img1_step + img1_tile_col_start_idx;
-        const data_type* img2_ptr_row_i = img2_ptr + img2_tile_row_start_idx * img2_step + img2_tile_col_start_idx;
+        const data_type* img1_ptr_row_i = img1_ptr + row_i * img1_step;
+        const data_type* img2_ptr_row_i = img2_ptr + row_i * img2_step;
 
-        for ( int col_i = 0; col_i < tile_size; ++col_i )
+        for ( int col_i = img1_tile_col_start_idx; col_i < (img1_tile_col_start_idx + tile_size); ++col_i )
         {
             data_type l1 = CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
             sum += ( l1 * l1 );
@@ -220,59 +278,6 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
     #undef CUSTOME_ABS
 
     return sum;
-}
-
-
-template <typename T>
-void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
-{
-    const T* img_ptr = (T*)img.data;
-    int src_height = img.size().height;
-    int src_width  = img.size().width;
-    int src_step   = img.step1();
-
-    for ( int row = start_idx_row; row < tile_size + start_idx_row; ++row )
-    {
-        const T* img_ptr_row = img_ptr + row * src_step;
-        for ( int col = start_idx_col; col < tile_size + start_idx_col; ++col )
-        {
-            printf("%u ", img_ptr_row[ col ] );
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-
-template< typename T>
-void print_img( const cv::Mat& img, int img_height = -1, int img_width = -1 )
-{
-    const T* img_ptr = (T*)img.data;
-    if ( img_height == -1 && img_width == -1 )
-    {
-        img_height = img.size().height;
-        img_width = img.size().width;
-    }
-    else
-    {
-        img_height = std::min( img.size().height, img_height );
-        img_width = std::min( img.size().width, img_width );
-    }
-    printf("Image size (h=%d, w=%d), Print range (h=0-%d, w=0-%d)]\n", \
-        img.size().height, img.size().width, img_height, img_width );
-
-    int img_step = img.step1();
-
-    for ( int row = 0; row < img_height; ++row )
-    {
-        const T* img_ptr_row = img_ptr + row * img_step;
-        for ( int col = 0; col < img_width; ++col )
-        {
-            printf("%u ", img_ptr_row[ col ]);
-        }
-        printf("\n");
-    }
-    printf("\n");
 }
 
 
@@ -433,11 +438,15 @@ void align_image_level( \
             {
                 for ( int search_col_j = 0; search_col_j < ( search_radiou * 2 + 1 ); search_col_j++ )
                 {
+                    printf("\n--->tile at [%d, %d] search (%d, %d)\n", \
+                        ref_tile_row_i, ref_tile_col_i, search_row_j, search_col_j );
+
+                    // TODO: currently distance is incorrect
                     unsigned long long distance_j = distance_func_ptr( ref_img, alt_img_pad, \
                         ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
                         alt_tile_row_start_idx_i + search_row_j, alt_tile_col_start_idx_i + search_col_j );
 
-                    printf("tile at (%d, %d) search (%d, %d), new dis %llu, old dis %llu\n", \
+                    printf("<---tile at [%d, %d] search (%d, %d), new dis %llu, old dis %llu\n", \
                         ref_tile_row_i, ref_tile_col_i, search_row_j, search_col_j, distance_j, min_distance_i );
 
                     // If this is smaller distance
