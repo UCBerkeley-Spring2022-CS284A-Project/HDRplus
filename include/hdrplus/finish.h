@@ -30,6 +30,7 @@ class Finish
         // LibRaw libraw_processor_finish;
         bayer_image* refBayer;
 
+        std::string mergedImgPath;
         Finish() = default;
 
 
@@ -49,17 +50,24 @@ class Finish
 
             // initialize parameters in libraw_processor_finish
             setLibRawParams();
-
-            
-            // cv::Mat rawRefGray = refBayer.grayscale_image;
             showParams();
-            // showRawPathList();
-            // showImg(rawRefGray);
-            // showMat(rawReference);
-            // showMat(mergedBayer);
 
             std::cout<<"Finish init() finished!"<<std::endl;
         }
+
+        // Finish(std::string burstPath, std::string mergedBayerPath,int refIdx){
+        //     this->refIdx = refIdx;
+        //     this->burstPath = burstPath;
+        //     mergedImgPath = mergedBayerPath;
+        //     refBayer= new bayer_image(this->rawPathList[refIdx]);
+        //     this->rawReference = refBayer->raw_image;//;grayscale_image
+
+        //     // initialize parameters in libraw_processor_finish
+        //     setLibRawParams();
+        //     showParams();
+
+        //     std::cout<<"Finish init() finished!"<<std::endl;
+        // }
 
 
         ~Finish() = default;
