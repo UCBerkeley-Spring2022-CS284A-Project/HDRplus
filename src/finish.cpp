@@ -403,16 +403,52 @@ namespace hdrplus
             for(int idx = 0;idx<end;idx++){
                 *(ptr+idx) = enhanceContrast_1pix(*(ptr+idx),options.gtmContrast);
             }
-            // cv::MatIterator_<cv::Vec3w> it, end;
-            // for( it = image.begin<cv::Vec3w>(), end = image.end<cv::Vec3w>(); it != end; ++it)
-            // {
-            //     for(int c=0;c<image.channels();c++){
-            //         (*it)[c] = enhanceContrast_1pix((*it)[c],options.gtmContrast);
-            //     }
-            // }
         }else{
             std::cout<<"GTM ignored, expected a contrast enhancement ratio between 0 and 1"<<std::endl;
         }
+        return image;
+    }
+
+    cv::Mat distL1_(cv::Mat X, cv::Mat Y){
+        int end_x = X.rows*X.cols*X.channels();
+        int end_y = Y.rows*Y.cols*Y.channels();
+        cv::Mat result = cv::Mat(X.rows,X.cols,X.type());
+        if(end_x==end_y){
+            u_int16_t* ptr_x = (u_int16_t*)X.data;
+            u_int16_t* ptr_y = (u_int16_t*)Y.data;
+            u_int16_t* ptr_r = (u_int16_t*)result.data;
+            for(int i=0;i<end_x;i++){
+                if(*(ptr_x+i)<*(ptr_y+i)){
+                    *(ptr_r+i) = *(ptr_y+i) - *(ptr_x+i);
+                }else{
+                    *(ptr_r+i) = *(ptr_x+i) - *(ptr_y+i);
+                }
+            }
+        }else{
+            std::cout<<"Mat size not match. distL1_ failed!"<<std::endl;
+        }
+        return result;
+    }
+
+    cv::Mat sharpenTriple(cv::Mat image, Tuning tuning, Options options){
+        // sharpen the image using unsharp masking
+        std::vector<float> amounts = tuning.sharpenAmount;
+        std::vector<float> sigmas = tuning.sharpenSigma;
+        std::vector<float> thresholds = tuning.sharpenThreshold;
+        // Compute all Gaussian blur
+        cv::Mat blur0,blur1,blur2;
+        cv::GaussianBlur(image,blur0,cv::Size(0,0),sigmas[0]);
+        cv::GaussianBlur(image,blur1,cv::Size(0,0),sigmas[1]);
+        cv::GaussianBlur(image,blur2,cv::Size(0,0),sigmas[2]);
+        std::cout<<" --- gaussian blur"<<std::endl;
+        // cv::imwrite("blur2.png", blur2);
+        // Compute all low contrast images
+        cv::Mat low0 = distL1_(blur0, image);
+        cv::Mat low1 = distL1_(blur1, image);
+        cv::Mat low2 = distL1_(blur2, image);
+        std::cout<<" --- low contrast"<<std::endl;
+        // Compute the triple sharpen
+
         return image;
     }
 
@@ -513,11 +549,14 @@ namespace hdrplus
         std::cout<<"-- Apply Gamma"<<std::endl;
 
         if(params.flags["writeGTMImage"]){
-                std::cout<<"writing GTMImage ..."<<std::endl;
-                cv::Mat outputImg = convert16bit2_8bit_(processedMerge.clone());
-                cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
-                cv::imwrite("GTM_gamma.jpg", outputImg);
-            }
+            std::cout<<"writing GTMImage ..."<<std::endl;
+            cv::Mat outputImg = convert16bit2_8bit_(processedMerge.clone());
+            cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+            cv::imwrite("GTM_gamma.jpg", outputImg);
+        }
+
+// Step 7: sharpen
+        cv::Mat processedImage = sharpenTriple(processedMerge.clone(), params.tuning, params.options);
 
         
         
