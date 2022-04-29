@@ -161,6 +161,66 @@ static T l1_distance( const cv::Mat& img1, const cv::Mat& img2, \
 }
 
 
+template< typename T, int tile_size >
+static T l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
+    int img1_tile_row_start_idx, int img1_tile_col_start_idx, \
+    int img2_tile_row_start_idx, int img2_tile_col_start_idx )
+{
+    #define CUSTOME_ABS( x ) ( x ) > 0 ? ( x ) : - ( x )
+
+    const T* img1_ptr = (const T*)img1.data;
+    const T* img2_ptr = (const T*)img2.data;
+
+    int img1_step = img1.step1();
+    int img2_step = img2.step1();
+
+    int img1_width = img1.size().width;
+    int img1_height = img1.size().height;
+
+    int img2_width = img2.size().width;
+    int img2_height = img2.size().height;
+
+    // Range check for safety
+    if ( img1_tile_row_start_idx < 0 || img1_tile_row_start_idx > img1_height - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+    }
+
+    if ( img1_tile_col_start_idx < 0 || img1_tile_col_start_idx > img1_width - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+    }
+
+    if ( img2_tile_row_start_idx < 0 || img2_tile_row_start_idx > img2_height - tile_size )
+    {
+        throw std::runtime_error("l1 distance img2_tile_row_start_idx out of valid range\n");
+    }
+
+    if ( img2_tile_col_start_idx < 0 || img2_tile_col_start_idx > img2_width - tile_size )
+    {
+        throw std::runtime_error("l1 distance img2_tile_col_start_idx out of valid range\n");
+    }
+
+    T sum(0);
+    // TODO: add pragma unroll here
+    for ( int row_i = 0; row_i < tile_size; ++row_i )
+    {
+        const T* img1_ptr_row_i = img1_ptr + img1_tile_row_start_idx * img1_step + img1_tile_col_start_idx;
+        const T* img2_ptr_row_i = img2_ptr + img2_tile_row_start_idx * img2_step + img2_tile_col_start_idx;
+
+        for ( int col_i = 0; col_i < tile_size; ++col_i )
+        {
+            T l1 = CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
+            sum += ( l1 * l1 );
+        }
+    }
+
+    #undef CUSTOME_ABS
+
+    return sum;
+}
+
+
 template <typename T>
 void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
 {
@@ -230,7 +290,30 @@ void align_image_level( \
     int num_tiles_w = ref_img.size().width / (tile_size / 2 ) - 1 ;
 
     // Every align image level share the same distance function. 
-    uint16_t(*)(const cv::Mat&, const cv::Mat&, int, int, int, int) distance_func_ptr = nullptr;
+    uint16_t (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = nullptr;
+
+    if ( distance == 1 )
+    {
+        if ( tile_size == 8 )
+        {
+            distance_func_ptr = &l1_distance<uint16_t, 8>;
+        }
+        else if ( tile_size == 16 )
+        {
+            distance_func_ptr = &l1_distance<uint16_t, 16>;
+        }
+    }
+    else if ( distance == 2 )
+    {
+        if ( tile_size == 8 )
+        {
+            distance_func_ptr = &l2_distance<uint16_t, 8>;
+        }
+        else if ( tile_size == 16 )
+        {
+            distance_func_ptr = &l2_distance<uint16_t, 16>;
+        }
+    }
 
     #ifndef NDEBUG
     printf("%s::%s start: \n", __FILE__, __func__ );
@@ -342,7 +425,7 @@ void align_image_level( \
             {
                 for ( int search_col_i = 0; search_col_i < search_radiou * 2; search_col_i++ )
                 {
-                    uint16_t distance_i = l1_distance<uint16_t, 8>( ref_img, alt_img_pad, \
+                    uint16_t distance_i = distance_func_ptr( ref_img, alt_img_pad, \
                         ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
                         alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
 
