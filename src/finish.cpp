@@ -397,7 +397,7 @@ namespace hdrplus
     }
 
     cv::Mat enhanceContrast(cv::Mat image, Options options){
-        if(options.gtmContrast>=0 && options.gtmContrast<=0){
+        if(options.gtmContrast>=0 && options.gtmContrast<=1){
             u_int16_t* ptr = (u_int16_t*)image.data;
             int end = image.rows*image.cols*image.channels();
             for(int idx = 0;idx<end;idx++){
