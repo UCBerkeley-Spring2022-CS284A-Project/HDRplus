@@ -430,6 +430,44 @@ namespace hdrplus
         return result;
     }
 
+    cv::Mat sharpenTriple_(cv::Mat image,
+        cv::Mat blur0, cv::Mat low0, float th0, float k0,
+        cv::Mat blur1, cv::Mat low1, float th1, float k1,
+        cv::Mat blur2, cv::Mat low2, float th2, float k2){
+            // create result mat
+            cv::Mat result = cv::Mat(image.rows,image.cols,image.type());
+            // initialize iteraters
+            u_int16_t* ptr_r = (u_int16_t*)result.data;
+            u_int16_t* ptr_img = (u_int16_t*)image.data;
+            u_int16_t* ptr_blur0 = (u_int16_t*)blur0.data;
+            u_int16_t* ptr_low0 = (u_int16_t*)low0.data;
+            u_int16_t* ptr_blur1 = (u_int16_t*)blur1.data;
+            u_int16_t* ptr_low1 = (u_int16_t*)low1.data;
+            u_int16_t* ptr_blur2 = (u_int16_t*)blur2.data;
+            u_int16_t* ptr_low2 = (u_int16_t*)low2.data;
+            int n_channels = image.channels();
+            int end = image.rows*image.cols*n_channels;
+            // traverse Image
+            for(int idx = 0;idx<end;idx++){
+                double r, r0, r1, r2;
+                double x = *(ptr_img+idx);
+                double l0 = *(ptr_low0+idx)/(double)USHRT_MAX;
+                double l1 = *(ptr_low1+idx)/(double)USHRT_MAX;
+                double l2 = *(ptr_low2+idx)/(double)USHRT_MAX;
+                double b0 = *(ptr_blur0+idx);
+                double b1 = *(ptr_blur1+idx);
+                double b2 = *(ptr_blur2+idx);
+                r0 = l0<th0? x:x+k0*(x-b0);
+                r1 = l1<th1? x:x+k1*(x-b1);
+                r2 = l2<th2? x:x+k2*(x-b2);
+                r = (r0+r1+r2)/3.0;
+                if(r<0) r=0;
+                if(r>USHRT_MAX) r = USHRT_MAX;
+                *(ptr_r+idx) = (u_int16_t)r;
+            }
+            return result;
+        }
+
     cv::Mat sharpenTriple(cv::Mat image, Tuning tuning, Options options){
         // sharpen the image using unsharp masking
         std::vector<float> amounts = tuning.sharpenAmount;
@@ -447,9 +485,14 @@ namespace hdrplus
         cv::Mat low1 = distL1_(blur1, image);
         cv::Mat low2 = distL1_(blur2, image);
         std::cout<<" --- low contrast"<<std::endl;
+        // cv::imwrite("low2.png", low2);
         // Compute the triple sharpen
-
-        return image;
+        cv::Mat sharpImage = sharpenTriple_(image,
+         blur0, low0, thresholds[0], amounts[0],
+         blur1, low1, thresholds[1], amounts[1],
+         blur2, low2, thresholds[2], amounts[2]);
+        std::cout<<" --- sharpen"<<std::endl;
+        return sharpImage;
     }
 
     void Finish::pipeline_finish(){
@@ -557,7 +600,12 @@ namespace hdrplus
 
 // Step 7: sharpen
         cv::Mat processedImage = sharpenTriple(processedMerge.clone(), params.tuning, params.options);
-
+        if(params.flags["writeFinalImage"]){
+            std::cout<<"writing FinalImage ..."<<std::endl;
+            cv::Mat outputImg = convert16bit2_8bit_(processedImage.clone());
+            cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+            cv::imwrite("FinalImage.jpg", outputImg);
+        }
         
         
 
