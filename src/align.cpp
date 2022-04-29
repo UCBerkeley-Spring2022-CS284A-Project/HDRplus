@@ -198,12 +198,12 @@ static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2,
 
     return_type sum(0);
     // TODO: add pragma unroll here
-    for ( int row_i = img1_tile_row_start_idx; row_i < (img1_tile_row_start_idx + tile_size); ++row_i )
+    for ( int row_i = 0; row_i < tile_size; ++row_i )
     {
-        const data_type* img1_ptr_row_i = img1_ptr + row_i * img1_step;
-        const data_type* img2_ptr_row_i = img2_ptr + row_i * img2_step;
+        const data_type* img1_ptr_row_i = img1_ptr + (img1_tile_row_start_idx + row_i) * img1_step + img1_tile_col_start_idx;
+        const data_type* img2_ptr_row_i = img2_ptr + (img2_tile_row_start_idx + row_i) * img2_step + img2_tile_col_start_idx;
 
-        for ( int col_i = img1_tile_col_start_idx; col_i < (img1_tile_col_start_idx + tile_size); ++col_i )
+        for ( int col_i = 0; col_i < tile_size; ++col_i )
         {
             data_type l1 = CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
             sum += l1;
@@ -263,12 +263,12 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
 
     return_type sum(0);
     // TODO: add pragma unroll here
-    for ( int row_i = img1_tile_row_start_idx; row_i < (img1_tile_row_start_idx + tile_size); ++row_i )
+    for ( int row_i = 0; row_i < tile_size; ++row_i )
     {
-        const data_type* img1_ptr_row_i = img1_ptr + row_i * img1_step;
-        const data_type* img2_ptr_row_i = img2_ptr + row_i * img2_step;
+        const data_type* img1_ptr_row_i = img1_ptr + (img1_tile_row_start_idx + row_i) * img1_step + img1_tile_col_start_idx;
+        const data_type* img2_ptr_row_i = img2_ptr + (img2_tile_row_start_idx + row_i) * img2_step + img2_tile_col_start_idx;
 
-        for ( int col_i = img1_tile_col_start_idx; col_i < (img1_tile_col_start_idx + tile_size); ++col_i )
+        for ( int col_i = 0; col_i < tile_size; ++col_i )
         {
             data_type l1 = CUSTOME_ABS( img1_ptr_row_i[ col_i ] - img2_ptr_row_i[ col_i ] );
             sum += ( l1 * l1 );
@@ -455,6 +455,27 @@ void align_image_level( \
                         min_distance_i = distance_j;
                         min_distance_col_i = search_col_j;
                         min_distance_row_i = search_row_j;
+                    }
+
+                    // If same value, choose the one closer to the original tile location
+                    if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
+                    {
+                        int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
+                        int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
+                        int curr_distance_row_2_ref = search_row_j - search_radiou;
+                        int curr_distance_col_2_ref = search_col_j - search_radiou;
+
+                        int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
+                        int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
+
+                        // previous min distance idx is farther away from ref tile start location
+                        if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
+                        {
+                            printf("@@@ Same distance, choose closer one (%d, %d) instead of (%d, %d)\n", \
+                                search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
+                            min_distance_col_i = search_col_j;
+                            min_distance_row_i = search_row_j;
+                        }
                     }
                 }
             }
