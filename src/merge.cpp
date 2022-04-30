@@ -7,22 +7,81 @@
 namespace hdrplus
 {
 
-void merge::process( const hdrplus::burst& burst_images, \
+void merge::process( hdrplus::burst& burst_images, \
                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments)
 {
     double lambda_shot, lambda_read;
     std::tie(lambda_shot, lambda_read) = burst_images.bayer_images[burst_images.reference_image_idx].get_noise_params();
 
-    // Call merge on each channel
+    // Get padded bayer image
     cv::Mat reference_image = burst_images.bayer_images_pad[burst_images.reference_image_idx];
-    reference_image.convertTo(reference_image, CV_32F);
+    // cv::imwrite("ref.jpg", reference_image);
     
-    // Get Channels
-    // cv::Mat channel_0(reference_image.rows, reference_image.cols, CV_32F, (uchar*)reference_image.data, 2 * sizeof(float));
-    // cv::cvtColor(outputImg, outputImg, cv::COLOR_GRAY2RGB);
+    // Get raw channels
+    std::vector<ushort> channels[4];
 
-    //cv::Mat merged_channel = processChannel(burst_images, alignments, channel_0);
+    for (int y = 0; y < reference_image.rows; ++y) {
+        for (int x = 0; x < reference_image.cols; ++x) {
+            if (y % 2 == 0) {
+                if (x % 2 == 0) {
+                    channels[0].push_back(reference_image.at<ushort>(y, x));
+                } else {
+                    channels[1].push_back(reference_image.at<ushort>(y, x));
+                }
+            } else {
+                if (x % 2 == 0) {
+                    channels[2].push_back(reference_image.at<ushort>(y, x));
+                } else {
+                    channels[3].push_back(reference_image.at<ushort>(y, x));
+                }
+            }
+        }
+    }
+
+    // For each channel, perform denoising and merge
+    for (int i = 0; i < 4; ++i) {
+        // Get channel mat
+        cv::Mat channel_i(reference_image.rows / 2, reference_image.cols / 2, CV_16U, channels[i].data());
+        // cv::imwrite("ref" + std::to_string(i) + ".jpg", channel_i);
+
+        // Apply merging on the channel
+        cv::Mat merged_channel = processChannel(burst_images, alignments, channel_i);
+        // cv::imwrite("merged" + std::to_string(i) + ".jpg", merged_channel);
+
+        // Put channel raw data back to channels
+        channels[i] = merged_channel.reshape(1, merged_channel.total());
+    }
+
+    // Write all channels back to a bayer mat
+    std::vector<ushort> merged_raw;
+
+    for (int y = 0; y < reference_image.rows; ++y) {
+        for (int x = 0; x < reference_image.cols; ++x) {
+            if (y % 2 == 0) {
+                if (x % 2 == 0) {
+                    merged_raw.push_back(channels[0][(y/2)*(reference_image.cols/2) + (x/2)]);
+                } else {
+                    merged_raw.push_back(channels[1][(y/2)*(reference_image.cols/2) + (x/2)]);
+                }
+            } else {
+                if (x % 2 == 0) {
+                    merged_raw.push_back(channels[2][(y/2)*(reference_image.cols/2) + (x/2)]);
+                } else {
+                    merged_raw.push_back(channels[3][(y/2)*(reference_image.cols/2) + (x/2)]);
+                }
+            }
+        }
+    }
     
+    // Create merged mat
+    cv::Mat merged(reference_image.rows, reference_image.cols, CV_16U, merged_raw.data());
+    // cv::imwrite("merged.jpg", merged);
+
+    // Remove padding
+    std::vector<int> padding = burst_images.padding_info_bayer;
+    cv::Range horizontal = cv::Range(padding[2], reference_image.cols - padding[3]);
+    cv::Range vertical = cv::Range(padding[0], reference_image.rows - padding[1]);
+    burst_images.merged_bayer_image = merged(vertical, horizontal);
 }
 
 std::vector<cv::Mat> merge::getReferenceTiles(cv::Mat reference_image) {
@@ -89,15 +148,15 @@ cv::Mat merge::mergeTiles(std::vector<cv::Mat> tiles, int num_rows, int num_cols
     return img_original;
 }
 
-cv::Mat merge::processChannel( const hdrplus::burst& burst_images, \
+cv::Mat merge::processChannel( hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
                       cv::Mat channel_image) {
 
     std::vector<cv::Mat> reference_tiles = getReferenceTiles(channel_image);
 
-    // Temporal Denoising
+    // TODO: Temporal Denoising
 
-    // Spatial Denoising
+    // TODO: Spatial Denoising
 
     // Process tiles through 2D cosine window
     std::vector<cv::Mat> windowed_tiles;
@@ -106,17 +165,7 @@ cv::Mat merge::processChannel( const hdrplus::burst& burst_images, \
     }
 
     // Merge tiles
-    cv::Mat merged = mergeTiles(windowed_tiles, channel_image.rows, channel_image.cols);
-
-    // cv::Mat outputImg = channel_image.clone();
-    // cv::cvtColor(outputImg, outputImg, cv::COLOR_GRAY2RGB);
-    // cv::imwrite("ref.jpg", outputImg);
-    // cv::Mat outputImg1 = reference_tiles[0].clone();
-    // cv::Mat outputImg1 = cosineWindow2D(reference_tiles[0].clone());
-    // cv::Mat outputImg1 = cat2Dtiles(tiles_2D);
-    // cv::cvtColor(merged, merged, cv::COLOR_GRAY2RGB);
-    // cv::imwrite("tile0.jpg", merged);
-    return merged;
+    return mergeTiles(windowed_tiles, channel_image.rows, channel_image.cols);
 }
 
 } // namespace hdrplus

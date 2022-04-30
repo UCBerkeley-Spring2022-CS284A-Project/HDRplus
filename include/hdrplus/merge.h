@@ -28,7 +28,7 @@ class merge
          *      Outer most vector is per alternative image.
          *      Inner most two vector is for horizontal & vertical tiles 
          */
-        void process( const hdrplus::burst& burst_images, \
+        void process( hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments);
 
 
@@ -86,7 +86,7 @@ class merge
 
         cv::Mat mergeTiles(std::vector<cv::Mat> tiles, int rows, int cols);
 
-        cv::Mat processChannel( const hdrplus::burst& burst_images, \
+        cv::Mat processChannel( hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
                       cv::Mat channel_image);
 };
