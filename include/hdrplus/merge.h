@@ -44,6 +44,20 @@ class merge
         */
 
     private:
+        float tileRMS(cv::Mat tile) {
+            cv::Mat squared;
+            cv::multiply(tile, tile, squared);
+            return sqrt(cv::mean(squared)[0]);
+        }
+
+        std::vector<float> getNoiseVariance(std::vector<cv::Mat> tiles, float lambda_shot, float lambda_read) {
+            std::vector<float> noise_variance;
+            for (auto tile : tiles) {
+                noise_variance.push_back(lambda_shot * tileRMS(tile) + lambda_read);
+            }
+            return noise_variance;
+        }
+    
         cv::Mat cosineWindow1D(cv::Mat input, int window_size = TILE_SIZE) {
             cv::Mat output = input.clone();
             for (int i = 0; i < input.cols; ++i) {
@@ -88,7 +102,9 @@ class merge
 
         cv::Mat processChannel( hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
-                      cv::Mat channel_image);
+                      cv::Mat channel_image, \
+                      float lambda_shot, \
+                      float lambda_read);
 };
 
 } // namespace hdrplus
