@@ -33,6 +33,9 @@ class burst
     
         // number of image (including reference) in burst
         int num_images;
+        
+        // Bayer image after merging, stored as cv::Mat
+        cv::Mat merged_bayer_image;
 };
 
 } // namespace hdrplus
