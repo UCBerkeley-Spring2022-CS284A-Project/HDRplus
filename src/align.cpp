@@ -65,16 +65,21 @@ static void build_per_grayimg_pyramid( \
 }
 
 
-template< int stride >
-static void upsample_alignment_stride( \
+template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr >
+static void build_upsampled_prev_aligement( \
     std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
     std::vector<std::vector<std::pair<int, int>>>& dst_alignment )
 {
+    printf("build_upsampled_prev_aligement with scale factor %d and tile size factor %d\n", \
+        pyramid_scale_factor_prev_curr, tilesize_scale_factor_prev_curr );
+
     int src_height = src_alignment.size();
     int src_width = src_alignment[ 0 ].size();
 
-    int dst_height = src_height * stride;
-    int dst_width = src_width * stride;
+    int repeat_factor = pyramid_scale_factor_prev_curr / tilesize_scale_factor_prev_curr;
+
+    int dst_height = src_height * repeat_factor;
+    int dst_width = src_width * repeat_factor;
 
     // Allocate data for dst_alignment
     dst_alignment.resize( dst_height, std::vector<std::pair<int, int>>( dst_width ) );
@@ -86,15 +91,15 @@ static void upsample_alignment_stride( \
         {
             // Scale alignment
             std::pair<int, int> align_i = src_alignment[ row_i ][ col_i ];
-            align_i.first *= stride;
-            align_i.second *= stride;
+            align_i.first *= pyramid_scale_factor_prev_curr;
+            align_i.second *= pyramid_scale_factor_prev_curr;
 
             // repeat
-            for ( int stride_row_i = 0; stride_row_i < stride; ++stride_row_i )
+            for ( int repeat_row_i = 0; repeat_row_i < repeat_factor; ++repeat_row_i )
             {
-                for ( int stride_col_i = 0; stride_col_i < stride; ++stride_col_i )
+                for ( int repeat_col_i = 0; repeat_col_i < repeat_factor; ++repeat_col_i )
                 {
-                    dst_alignment[ row_i + stride_row_i ][ col_i + stride_col_i ] = align_i;
+                    dst_alignment[ row_i + repeat_row_i ][ col_i + repeat_col_i ] = align_i;
                 }
             }
         }
@@ -292,10 +297,6 @@ void align_image_level( \
     int search_radiou, \
     int distance_type )
 {
-    /* Basic infos */
-    int num_tiles_h = ref_img.size().height / (curr_tile_size / 2) - 1;
-    int num_tiles_w = ref_img.size().width / (curr_tile_size / 2 ) - 1 ;
-
     // Every align image level share the same distance function. 
     // Use function ptr to reduce if else overhead inside for loop
     unsigned long long (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = nullptr;
@@ -323,17 +324,41 @@ void align_image_level( \
         }
     }
 
-    #ifndef NDEBUG
-    printf("%s::%s start: \n", __FILE__, __func__ );
-    printf("    scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance L%d, \n", \
-        scale_factor_prev_curr, curr_tile_size, prev_tile_size, search_radiou, distance_type );
-    printf("    ref img size h=%d w=%d, alt img size h=%d w=%d, \n", \
-        ref_img.size().height, ref_img.size().width, alt_img.size().height, alt_img.size().width );
-    printf("    num tile h %d, num tile w %d\n", num_tiles_h, num_tiles_w);
-    #endif
+    // Every level share the same upsample function
+    void (*upsample_alignment_func_ptr)(std::vector<std::vector<std::pair<int, int>>>&, std::vector<std::vector<std::pair<int, int>>>&) = nullptr;
+    if ( scale_factor_prev_curr == 2 )
+    {
+        if ( curr_tile_size / prev_tile_size == 2 )
+        {
+            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 2>;
+        }
+        else if ( curr_tile_size / prev_tile_size == 1 )
+        {
+            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 1>;
+        }
+        else
+        {
+            throw std::runtime_error("Something wrong with upsampling function setting\n");
+        }
+    }
+    else if ( scale_factor_prev_curr == 4 )
+    {
+        if ( curr_tile_size / prev_tile_size == 2 )
+        {
+            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 2>;
+        }
+        else if ( curr_tile_size / prev_tile_size == 1 )
+        {
+            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 1>;
+        }
+        else
+        {
+            throw std::runtime_error("Something wrong with upsampling function setting\n");
+        }
+    }
 
-    printf("Reference image h=%d, w=%d: \n", ref_img.size().height, ref_img.size().width );
-    print_img<uint16_t>( ref_img );
+    int num_tiles_ref_h = ref_img.size().height / (curr_tile_size / 2) - 1;
+    int num_tiles_ref_w = ref_img.size().width / (curr_tile_size / 2 ) - 1;
 
     /* Upsample pervious layer alignment */
     std::vector<std::vector<std::pair<int, int>>> upsampled_prev_aligement;
@@ -342,27 +367,29 @@ void align_image_level( \
     // prev_alignment is invalid / empty, construct alignment as (0,0)
     if ( prev_tile_size == -1 )
     {
-        printf("create empty prev alignment\n");
-        upsampled_prev_aligement.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
+        upsampled_prev_aligement.resize( num_tiles_ref_h, \
+            std::vector<std::pair<int, int>>( num_tiles_ref_w, std::pair<int, int>(0, 0) ) );
     }
     // Upsample previous level alignment 
     else
     {
-        if ( scale_factor_prev_curr == 2 )
-        {
-            // TODO: add choose from 3 neighbour
-            upsample_alignment_stride<2>( prev_aligement, upsampled_prev_aligement );
-        }
-        else if ( scale_factor_prev_curr == 4 )
-        {
-            // TODO: add choose from 3 neighbour
-            upsample_alignment_stride<4>( prev_aligement, upsampled_prev_aligement );
-        }
-        else
-        {
-            throw std::runtime_error("Invalid scale factor" + std::to_string( scale_factor_prev_curr ) );
-        }
+        upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement );
     }
+
+    /* Basic infos */
+    // NOTE: num_tile_h might be different from num_tile_ref_h
+    int num_tiles_h = upsampled_prev_aligement.size();
+    int num_tiles_w = upsampled_prev_aligement.at(0).size();
+
+    #ifndef NDEBUG
+    printf("%s::%s start: \n", __FILE__, __func__ );
+    printf("    scale_factor_prev_curr %d, tile_size %d, prev_tile_size %d, search_radiou %d, distance L%d, \n", \
+        scale_factor_prev_curr, curr_tile_size, prev_tile_size, search_radiou, distance_type );
+    printf("    ref img size h=%d w=%d, alt img size h=%d w=%d, \n", \
+        ref_img.size().height, ref_img.size().width, alt_img.size().height, alt_img.size().width );
+    printf("    num tile h (upsampled) %d, num tile w (upsampled) %d\n", num_tiles_h, num_tiles_w);
+    printf("    num tile h (gray) %d, num tile w (gray) %d\n", num_tiles_ref_h, num_tiles_ref_w);
+    #endif
 
     // allocate memory for current alignmenr
     curr_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
@@ -374,6 +401,9 @@ void align_image_level( \
                         search_radiou, search_radiou, search_radiou, search_radiou, \
                         cv::BORDER_CONSTANT, cv::Scalar( UINT_LEAST16_MAX ) );
 
+    printf("Reference image h=%d, w=%d: \n", ref_img.size().height, ref_img.size().width );
+    print_img<uint16_t>( ref_img );
+
     printf("Alter image pad h=%d, w=%d: \n", alt_img_pad.size().height, alt_img_pad.size().width );
     print_img<uint16_t>( alt_img_pad );
 
@@ -382,6 +412,7 @@ void align_image_level( \
     int alt_tile_row_idx_max = alt_img_pad.size().height - ( curr_tile_size + 2 * search_radiou );
     int alt_tile_col_idx_max = alt_img_pad.size().width  - ( curr_tile_size + 2 * search_radiou );
 
+    // TODO delete below distance vector, this is for debug only
     std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
 
     /* Iterate through all reference tile & compute distance */
@@ -605,6 +636,7 @@ void align::process( const hdrplus::burst& burst_images, \
         std::vector<std::vector<std::pair<int, int>>> prev_alignment;
         for ( int level_i = num_levels - 1; level_i >= 0; level_i-- )
         {
+            printf("\n\n########################align level %d\n", level_i );
             align_image_level(
                 ref_grayimg_pyramid[ level_i ],    // reference image at current level
                 alt_grayimg_pyramid[ level_i ],    // alternative image at current level
@@ -620,7 +652,9 @@ void align::process( const hdrplus::burst& burst_images, \
             prev_alignment.swap( curr_alignment );
             curr_alignment.clear();
 
-            break;
+            // Stop at second iteration
+            if ( level_i == num_levels - 2 )
+                break;
         } // for pyramid level
 
 
