@@ -73,6 +73,10 @@ class merge
         std::vector<cv::Mat> getReferenceTiles(cv::Mat reference_image);
 
         cv::Mat mergeTiles(std::vector<cv::Mat> tiles, int rows, int cols);
+
+        cv::Mat processChannel( const hdrplus::burst& burst_images, \
+                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
+                      cv::Mat channel_image);
 };
 
 } // namespace hdrplus
