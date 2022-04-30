@@ -30,7 +30,19 @@ class merge
          */
         void process( const hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments);
-        
+
+
+        /*
+        std::vector<cv::Mat> get_other_tiles(); //return the other tile list T_1 to T_n
+
+        std::vector<cv::Mat> vector_math(string operation, reference_tile, other_tile_list); //for loop allowing operations across single element and list
+
+        std::vector<cv::Mat> scalar_vector_math(string operation, scalar num, std::vector<cv::Mat> tile_list); //for loop allowing operations across single element and list
+
+        std::vector<cv::Mat> average_vector(std::vector<cv::Mat> tile_list); //take average of vector elements
+
+        */
+
     private:
         cv::Mat cosineWindow1D(cv::Mat input, int window_size = TILE_SIZE) {
             cv::Mat output = input.clone();
