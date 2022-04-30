@@ -379,31 +379,16 @@ std::pair<double, double> merge::getNoiseParams( int ISO, \
     double lambda_shot, lambda_read;
     std::tie(lambda_shot, lambda_read) = burst_images.bayer_images[burst_images.reference_image_idx].get_noise_params();
 
-    // Obtain Reference tiles
-    cv::Mat reference_image = burst_images.grayscale_images_pad[burst_images.reference_image_idx];
-    std::vector<cv::Mat> reference_tiles = getReferenceTiles(reference_image);
-
-    // Temporal Denoising
-
-    // Spatial Denoising
-
-    // Process tiles through 2D cosine window
-    std::vector<cv::Mat> windowed_tiles;
-    for (auto tile : reference_tiles) {
-        windowed_tiles.push_back(cosineWindow2D(tile));
-    }
-
-    // Merge tiles
-    cv::Mat merged = mergeTiles(windowed_tiles, reference_image.rows, reference_image.cols);
-
-    // cv::Mat outputImg = reference_image.clone();
+    // Call merge on each channel
+    cv::Mat reference_image = burst_images.bayer_images_pad[burst_images.reference_image_idx];
+    reference_image.convertTo(reference_image, CV_32F);
+    
+    // Get Channels
+    // cv::Mat channel_0(reference_image.rows, reference_image.cols, CV_32F, (uchar*)reference_image.data, 2 * sizeof(float));
     // cv::cvtColor(outputImg, outputImg, cv::COLOR_GRAY2RGB);
-    // cv::imwrite("ref.jpg", outputImg);
-    // cv::Mat outputImg1 = reference_tiles[0].clone();
-    // cv::Mat outputImg1 = cosineWindow2D(reference_tiles[0].clone());
-    // cv::Mat outputImg1 = cat2Dtiles(tiles_2D);
-    // cv::cvtColor(outputImg1, outputImg1, cv::COLOR_GRAY2RGB);
-    // cv::imwrite("tile0.jpg", outputImg1);
+
+    //cv::Mat merged_channel = processChannel(burst_images, alignments, channel_0);
+    
 }
 
 std::vector<cv::Mat> merge::getReferenceTiles(cv::Mat reference_image) {
@@ -468,6 +453,36 @@ cv::Mat merge::mergeTiles(std::vector<cv::Mat> tiles, int num_rows, int num_cols
     img_original(cv::Rect(offset, offset, num_cols - TILE_SIZE, num_rows - TILE_SIZE)) += img_2d;
 
     return img_original;
+}
+
+cv::Mat merge::processChannel( const hdrplus::burst& burst_images, \
+                      std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
+                      cv::Mat channel_image) {
+
+    std::vector<cv::Mat> reference_tiles = getReferenceTiles(channel_image);
+
+    // Temporal Denoising
+
+    // Spatial Denoising
+
+    // Process tiles through 2D cosine window
+    std::vector<cv::Mat> windowed_tiles;
+    for (auto tile : reference_tiles) {
+        windowed_tiles.push_back(cosineWindow2D(tile));
+    }
+
+    // Merge tiles
+    cv::Mat merged = mergeTiles(windowed_tiles, channel_image.rows, channel_image.cols);
+
+    // cv::Mat outputImg = channel_image.clone();
+    // cv::cvtColor(outputImg, outputImg, cv::COLOR_GRAY2RGB);
+    // cv::imwrite("ref.jpg", outputImg);
+    // cv::Mat outputImg1 = reference_tiles[0].clone();
+    // cv::Mat outputImg1 = cosineWindow2D(reference_tiles[0].clone());
+    // cv::Mat outputImg1 = cat2Dtiles(tiles_2D);
+    // cv::cvtColor(merged, merged, cv::COLOR_GRAY2RGB);
+    // cv::imwrite("tile0.jpg", merged);
+    return merged;
 }
 
 } // namespace hdrplus
