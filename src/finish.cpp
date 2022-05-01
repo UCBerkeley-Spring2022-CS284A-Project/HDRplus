@@ -495,7 +495,7 @@ namespace hdrplus
         return sharpImage;
     }
 
-    void Finish::pipeline_finish(){
+    void finish::pipeline_finish(){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
 
@@ -546,9 +546,10 @@ namespace hdrplus
 
 // step 5. HDR tone mapping
 // processedImage, gain, shortExposure, longExposure, fusedExposure = localToneMap(burstPath, processedImage, options)
+        int gain;
         if(params.options.ltmGain){
             cv::Mat shortExposure, longExposure, fusedExposure;
-            int gain;
+            
             localToneMap(processedMerge, params.options,shortExposure,longExposure,fusedExposure,gain);
             std::cout<<"gain="<< gain<<std::endl;
             if(params.flags["writeShortExposure"]){
@@ -606,13 +607,31 @@ namespace hdrplus
             cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
             cv::imwrite("FinalImage.jpg", outputImg);
         }
+// write final ref
+        if(params.flags["writeReferenceFinal"]){
+            std::cout<<"writing Final Ref Image ..."<<std::endl;
+            if(params.options.ltmGain){
+                params.options.ltmGain = gain;
+            }
+            cv::Mat shortExposureRef, longExposureRef, fusedExposureRef;
+            localToneMap(processedRefImage, params.options,shortExposureRef,longExposureRef,fusedExposureRef,gain);
+            if(params.options.gtmContrast){ // contrast enhancement / global tone mapping
+                processedRefImage = enhanceContrast(processedRefImage, params.options);
+            }
+            processedRefImage = gammasRGB(processedRefImage.clone(),true);
+            // sharpen
+            processedRefImage = sharpenTriple(processedRefImage.clone(), params.tuning, params.options);
+            cv::Mat outputImg = convert16bit2_8bit_(processedRefImage.clone());
+            cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
+            cv::imwrite("FinalReference.jpg", outputImg);
+        }
         
         
 
 // End of finishing
     }
 
-    void Finish::copy_mat_16U(cv::Mat& A, cv::Mat B){
+    void finish::copy_mat_16U(cv::Mat& A, cv::Mat B){
         u_int16_t* ptr_A = (u_int16_t*)A.data;
         u_int16_t* ptr_B = (u_int16_t*)B.data;
         for(int r = 0; r < A.rows; r++) {
@@ -624,7 +643,7 @@ namespace hdrplus
 
     
 
-    void Finish::copy_rawImg2libraw(std::shared_ptr<LibRaw>& libraw_ptr, cv::Mat B){
+    void finish::copy_rawImg2libraw(std::shared_ptr<LibRaw>& libraw_ptr, cv::Mat B){
         u_int16_t* ptr_A = (u_int16_t*)libraw_ptr->imgdata.rawdata.raw_image;
         u_int16_t* ptr_B = (u_int16_t*)B.data;
         for(int r = 0; r < B.rows; r++) {
