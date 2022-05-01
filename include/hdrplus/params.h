@@ -29,16 +29,22 @@ class Options{
         float temporalfactor=75.0;
         float spatialfactor = 0.1;
         int ltmGain=-1;
-        float gtmContrast=0.075;
+        double gtmContrast=0.075;
         int verbose=2; // (0, 1, 2, 3, 4, 5)
 
 };
 
+class Tuning{
+    public:
+        std::string ltmGain = "auto";
+        double gtmContrast = 0.075;
+        std::vector<float> sharpenAmount{1,0.5,0.5};
+        std::vector<float> sharpenSigma{1,2,4};
+        std::vector<float> sharpenThreshold{0.02,0.04,0.06};
+};
+
 class Parameters{
     public:
-        std::string tuning_ltmGain = "auto";
-        double tuning_gtmContrast = 0.075;
-
         std::unordered_map<std::string,bool> flags{
             {"writeReferenceImage",true},
             {"writeGammaReference", true},
@@ -56,6 +62,7 @@ class Parameters{
 
         RawpyArgs rawpyArgs;
         Options options;
+        Tuning tuning;
 
         Parameters()= default;
 
