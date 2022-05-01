@@ -105,6 +105,9 @@ class merge
                       cv::Mat channel_image, \
                       float lambda_shot, \
                       float lambda_read);
+        
+        std::vector<ushort> getChannels(cv::Mat input_image);
+
 };
 
 } // namespace hdrplus
