@@ -18,7 +18,7 @@ namespace hdrplus
     cv::Mat gammasRGB(cv::Mat img, bool mode);
     
 
-class Finish
+class finish
 {
     public:
         cv::Mat mergedBayer; // merged image from Merge Module
@@ -31,16 +31,17 @@ class Finish
         bayer_image* refBayer;
 
         std::string mergedImgPath;
-        Finish() = default;
+        finish() = default;
 
-
-        Finish(std::string burstPath, cv::Mat mergedBayer,int refIdx){
+// please use this initialization after merging part finish
+        finish(std::string burstPath, cv::Mat mergedBayer,int refIdx){
             this->refIdx = refIdx;
             this->burstPath = burstPath;
             this->mergedBayer = mergedBayer;
         }
 
-        Finish(std::string burstPath, std::string mergedBayerPath,int refIdx){
+// for local testing only
+        finish(std::string burstPath, std::string mergedBayerPath,int refIdx){
             this->refIdx = refIdx;
             this->burstPath = burstPath;
             this->mergedBayer = loadFromCSV(mergedBayerPath, CV_16UC1);//
@@ -55,22 +56,9 @@ class Finish
             std::cout<<"Finish init() finished!"<<std::endl;
         }
 
-        // Finish(std::string burstPath, std::string mergedBayerPath,int refIdx){
-        //     this->refIdx = refIdx;
-        //     this->burstPath = burstPath;
-        //     mergedImgPath = mergedBayerPath;
-        //     refBayer= new bayer_image(this->rawPathList[refIdx]);
-        //     this->rawReference = refBayer->raw_image;//;grayscale_image
-
-        //     // initialize parameters in libraw_processor_finish
-        //     setLibRawParams();
-        //     showParams();
-
-        //     std::cout<<"Finish init() finished!"<<std::endl;
-        // }
 
 
-        ~Finish() = default;
+        ~finish() = default;
 
         // finish pipeline func
         void pipeline_finish();
@@ -123,8 +111,8 @@ class Finish
         void showParams()
         {
             std::cout<<"Parameters:"<<std::endl;
-            std::cout<<"tuning_ltmGain = "<<this->params.tuning_ltmGain<<std::endl;
-            std::cout<<"tuning_gtmContrast = "<<this->params.tuning_gtmContrast<<std::endl;
+            std::cout<<"tuning_ltmGain = "<<this->params.tuning.ltmGain<<std::endl;
+            std::cout<<"tuning_gtmContrast = "<<this->params.tuning.gtmContrast<<std::endl;
             for(auto key_val:this->params.flags){
                 std::cout<<key_val.first<<","<<key_val.second<<std::endl;
             }
