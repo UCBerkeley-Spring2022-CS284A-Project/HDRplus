@@ -653,51 +653,6 @@ namespace hdrplus
         }
 
     }
-
-    // cv::Mat Finish::postprocess(std::shared_ptr<LibRaw>& libraw_ptr){
-    //     std::cout<<"postprocessing..."<<std::endl;
-    //     std::cout<<"conversion to 16 bit using black and white levels, demosaicking, white balance, color correction..."<<std::endl;
-
-    //     libraw_ptr->dcraw_process();
-    //     int errorcode;
-
-    //     libraw_processed_image_t *ret_img = libraw_ptr->dcraw_make_mem_image(&errorcode);
-
-    //     // std::cout<<"ret_img height = "<<ret_img->height<<std::endl;
-    //     // std::cout<<"ret_img width = "<<ret_img->width<<std::endl;
-    //     // std::cout<<"ret_img colors = "<<ret_img->colors<<std::endl;
-    //     // std::cout<<"ret_img bits = "<<ret_img->bits<<std::endl;
-
-    //     cv::Mat processedImg(ret_img->height,ret_img->width,CV_16UC3,ret_img->data);
-
-    //     std::cout<<"postprocess finished!"<<std::endl;
-    //     return processedImg;
-    // }
-
-    // void Finish::pipeline_finish(){ // post process test
-    //     // copy mergedBayer to rawReference
-    //     std::cout<<"finish pipeline start ..."<<std::endl;
-    //     // copy_mat_16U(rawReference,mergedBayer);
-    //     // copy_rawImg2libraw(refBayer->libraw_processor,mergedBayer);
-    //     // rawReference = cv::Mat( rawReference.rows, rawReference.cols, CV_16U, refBayer->libraw_processor->imgdata.rawdata.raw_image );
-    //     // showImg(rawReference);
-    //     if(params.flags["writeReferenceImage"]){
-    //         std::cout<<"process reference img ..."<<std::endl;
-    //         cv::Mat processedImage = postprocess(refBayer->libraw_processor,params.rawpyArgs);
-    //         //normalize(processedImage,CV_16UC1);
-    //         std::cout<<"processedImage.rows = "<<processedImage.rows<<std::endl;
-    //         // convert16bit2_8bit_(processedImage);
-    //         // processedImage.convertTo(processedImage, CV_8UC3);
-    //         cv::cvtColor(processedImage, processedImage, cv::COLOR_RGB2BGR);
-    //         cv::imshow("test",processedImage);
-    //         cv::imwrite("processedRef.png", processedImage);
-    //         cv::waitKey(0);
-    //     }
-        
-    //     // showImg(rawReference);
-
-    // }
-
     
     
 } // namespace hdrplus
