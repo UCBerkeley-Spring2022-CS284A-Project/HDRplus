@@ -127,4 +127,81 @@ cv::Mat downsample_nearest_neighbour( cv::Mat src_image )
     return dst_image;
 }
 
+
+template< typename T >
+void print_cvmat( cv::Mat image )
+{
+    const T* img_ptr = (const T*)image.data;
+    int height = image.size().height;
+    int width = image.size().width;
+    int step = image.step1();
+
+    printf("print_cvmat()::Image of size height = %d, width = %d, step = %d\n", \
+        height, width, step );
+
+    for ( int row_i = 0; row_i < height; ++row_i )
+    {
+        int row_i_offset = row_i * step;
+        for ( int col_i = 0; col_i < width; ++col_i )
+        {
+            printf("%3.d ", img_ptr[ row_i_offset + col_i ]);
+            //printf("%3.d ", int( image.at<T>( row_i, col_i ) ) );
+        }
+        printf("\n");
+    }
+}
+
+
+/**
+ * @brief Extract RGB channel seprately from bayer image
+ * 
+ * @tparam T data tyoe of bayer image.
+ * @return vector of RGB image. OpenCV internally maintain reference count. 
+ *      Thus this step won't create deep copy overhead. 
+ * 
+ * @example extract_rgb_fmom_bayer<uint16_t>( bayer_img, rgb_vector_container );
+ */
+template <typename T>
+void extract_rgb_fmom_bayer( const cv::Mat& bayer_img, \
+    cv::Mat& red_img, cv::Mat& green_img, cv::Mat& blue_img )
+{
+    const T* bayer_img_ptr = (const T*)bayer_img.data;
+    int bayer_width = bayer_img.size().width;
+    int bayer_height = bayer_img.size().height;
+    int bayer_step = bayer_img.step1();
+
+    if ( bayer_width % 2 != 0 || bayer_height % 2 != 0 )
+    {
+        throw std::runtime_error("Bayer image data size incorrect, must be multiplier of 2\n");
+    }
+
+    // RGB image is half the size of bayer image
+    int rgb_width = bayer_width / 2;
+    int rgb_height = bayer_height / 2;
+    red_img.create(   rgb_height, rgb_width, bayer_img.type() );
+    green_img.create( rgb_height, rgb_width, bayer_img.type() );
+    blue_img.create(  rgb_height, rgb_width, bayer_img.type() );
+    int rgb_step = red_img.step1();
+
+    T* r_img_ptr = (T*)red_img.data;
+    T* g_img_ptr = (T*)green_img.data;
+    T* b_img_ptr = (T*)blue_img.data;
+
+    for ( int rgb_row_i = 0; rgb_row_i < rgb_height; rgb_row_i++ )
+    {
+        int rgb_row_i_offset = rgb_row_i * rgb_step;
+
+        // Every RGB row corresbonding to two Bayer image row
+        int bayer_row_i_offset1 = ( rgb_row_i * 2 + 0 ) * bayer_step; // For RG
+        int bayer_row_i_offset2 = ( rgb_row_i * 2 + 1 ) * bayer_step; // For GB
+
+        for ( int rgb_col_j = 0; rgb_col_j < rgb_width; rgb_col_j++ )
+        {   
+            r_img_ptr[ rgb_row_i_offset + rgb_col_j ] = bayer_img_ptr[ bayer_row_i_offset1 + ( rgb_col_j * 2 + 0 ) ];
+            g_img_ptr[ rgb_row_i_offset + rgb_col_j ] = bayer_img_ptr[ bayer_row_i_offset1 + ( rgb_col_j * 2 + 1 ) ];
+            b_img_ptr[ rgb_row_i_offset + rgb_col_j ] = bayer_img_ptr[ bayer_row_i_offset2 + ( rgb_col_j * 2 + 1 ) ];
+        }
+    }
+}
+
 } // namespace hdrplus

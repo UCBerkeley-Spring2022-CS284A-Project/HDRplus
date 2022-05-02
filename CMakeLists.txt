@@ -4,10 +4,10 @@ cmake_minimum_required(VERSION 3.0)
 project(hdrplus)
 
 # set c++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -march=native -O3")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -std=c++11 -Wall -march=native -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3")
 
 # make sure we use Release and warn otherwise
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -24,7 +24,7 @@ else()
 endif()
 
 # require OpenCV
-find_package( OpenCV 3 REQUIRED )
+find_package( OpenCV 4 REQUIRED )
 include_directories( BEFORE ${OpenCV_INCLUDE_DIRS} )
 message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
 
@@ -36,13 +36,6 @@ message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 # Exiv2
 find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
 message(STATUS "Found Exiv2 and linked")
-
-if(NOT APPLE)
-  # The clang compiler (on osx) is somehow much more strict
-  # than the compilers on ubuntu and so this does not seem
-  # possible on OSX just yet.
-  add_definitions( -Werror )
-endif()
 
 # library
 include_directories( include )
