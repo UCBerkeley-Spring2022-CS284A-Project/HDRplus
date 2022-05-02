@@ -103,6 +103,7 @@ class merge
         cv::Mat processChannel( hdrplus::burst& burst_images, \
                       std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
                       cv::Mat channel_image, \
+                      std::vector<cv::Mat> alternate_channel_i_list,\
                       float lambda_shot, \
                       float lambda_read);
         
