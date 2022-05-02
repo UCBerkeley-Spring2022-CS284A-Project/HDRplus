@@ -419,7 +419,25 @@ std::pair<double, double> merge::getNoiseParams( int ISO, \
             //we should be getting the individual channel in the same place where we call the processChannel function with the reference channel in its arguments
             //possibly we could add another argument in the processChannel function which is the channel_i for the alternate image. maybe using a loop to cover all the other images
 
-            cv::Mat merged_channel = processChannel(burst_images, alignments, channel_i, lambda_shot, lambda_read);
+            //create list of channel_i of alternate images:
+            std::vector<cv::Mat> alternate_channel_i_list;
+            for (int j = 0; j < burst_images.num_images; j++) {
+                if (j != burst_images.reference_image_idx) {
+
+                    //get alternate image
+                    cv::Mat alt_image = burst_images.bayer_images_pad[j];
+                    std::vector<ushort> alt_img_channel = getChannels(alt_image); //get channel array from alternate image
+                    cv::Mat alt_channel_i(alt_image.rows / 2, alt_image.cols / 2, CV_16U, alt_img_channel[i].data());
+
+                    alternate_channel_i_list.push_back(alt_channel_i)
+                }
+            }
+            
+            /////
+
+            //cv::Mat merged_channel = processChannel(burst_images, alignments, channel_i, lambda_shot, lambda_read);
+
+            cv::Mat merged_channel = processChannel(burst_images, alignments, channel_i, alternate_channel_i_list, lambda_shot, lambda_read);
             // cv::imwrite("merged" + std::to_string(i) + ".jpg", merged_channel);
 
             // Put channel raw data back to channels
@@ -528,6 +546,7 @@ std::pair<double, double> merge::getNoiseParams( int ISO, \
     cv::Mat merge::processChannel(hdrplus::burst& burst_images, \
         std::vector<std::vector<std::vector<std::pair<int, int>>>>& alignments, \
         cv::Mat channel_image, \
+        std::vector<cv::Mat> alternate_channel_i_list,\
         float lambda_shot, \
         float lambda_read) {
         // Get tiles of the reference image
@@ -555,43 +574,50 @@ std::pair<double, double> merge::getNoiseParams( int ISO, \
         //4. temporal factor
         //return: merged image patches dft
         
-        /*
+        
         
         //tile_size = TILE_SIZE;
-        double temporal_factor = 8 //8 by default
+        /*
+        double temporal_factor = 8.0 //8 by default
 
         double temporal_noise_scaling = (pow(TILE_SIZE,2) * (1.0/16*2))*temporal_factor;
 
         //start calculating the merged image tiles fft
      
-        for (int i = 0;i < burst_images.num_images; i++) {
-            if (i != burst_images.reference_image_idx) {
-
-            }
-        }
-        //sample of 0th image
-        altername_image = burst_images.bayer_images_pad[0]
         
-        //get the tiles of the alternate image
-        std::vector<cv::Mat> alternate_image_tiles = getReferenceTiles(channel_image);
+        //get the tiles of the alternate image as a list
+
+        std::vector<std::vector<cv::Mat>> alternate_channel_i_tile_list; //list of alt channel tiles
+        std::vector<std::vector<cv::Mat>> alternate_tiles_DFT_list; //list of alt channel tiles
+
+        for (auto alt_img_channel : alternate_channel_i_list) {
+            std::vector<ushort> alt_img_channel_tile = getReferenceTiles(alt_img_channel); //get tiles from alt image
+            alternate_channel_i_tile_list.push_back(alt_img_channel_tile)
+
+            std::vector<cv::Mat> alternate_tiles_DFT_list;
+            for (auto alt_tile : alt_img_channel_tile) {
+                cv::Mat alt_tile_DFT;
+                alt_tile.convertTo(alt_tile_DFT, CV_32F);
+                cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
+                alternate_tiles_DFT_list.push_back(alt_tile_DFT);
+            }
+            alternate_tiles_DFT_list.push_back(alternate_tiles_DFT);
+        }
 
         //get the dft of the alternate image
-        std::vector<cv::Mat> alternate_tiles_DFT;
-        for (auto alt_tile : alternate_tiles_DFT) {
-            cv::Mat alt_tile_DFT;
-            alt_tile.convertTo(alt_tile_DFT, CV_32F);
-            cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
-            alternate_tiles_DFT.push_back(alt_tile_DFT);
-        }
+        //std::vector<cv::Mat> alternate_tiles_DFT;
+        
 
 
 
-        std::vector<cv::Mat> tile_differences = reference_tiles_DFT - alternate_tiles_DFT;
-        std::vector<cv::Mat>  tile_sq_asolute_diff = tile_differences; //tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+        std::vector<cv::Mat> tile_differences = reference_tiles_DFT - alternate_tiles_DFT_list;
+        std::vector<cv::Mat>  tile_sq_asolute_diff = tile_differences; //squared absolute difference is tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+
+        //find the squared absolute difference across all the tiles
 
         std::vector<cv::Mat>  A = tile_sq_asolute_diff/(tile_sq_asolute_diff+noise_variance)
 
-        std::vector<cv::Mat> merged_image_tiles_fft = alternate_tiles_DFT + A * tile_differences;
+        std::vector<cv::Mat> merged_image_tiles_fft = alternate_tiles_DFT_list + A * tile_differences;
 
         //use merged_image_tiles_fft into part 4.3
 
@@ -621,9 +647,9 @@ std::pair<double, double> merge::getNoiseParams( int ISO, \
         
         //apply the cosineWindow2D over the merged_channel_tiles_spatial and reconstruct the image
 
+        
         */
 
-       
         // 4.4 Cosine Window Merging
         // Process tiles through 2D cosine window
         std::vector<cv::Mat> windowed_tiles;
