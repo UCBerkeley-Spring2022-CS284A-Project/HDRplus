@@ -57,3 +57,7 @@ tests/test_burst
 
 # VS Settings
 CMakeSettings.json
+
+
+# Xiao local files
+debug/
