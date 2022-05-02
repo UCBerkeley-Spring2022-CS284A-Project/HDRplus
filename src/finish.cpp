@@ -625,9 +625,6 @@ namespace hdrplus
             cv::cvtColor(outputImg, outputImg, cv::COLOR_RGB2BGR);
             cv::imwrite("FinalReference.jpg", outputImg);
         }
-        
-        
-
 // End of finishing
     }
 
