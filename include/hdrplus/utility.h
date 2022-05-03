@@ -44,7 +44,7 @@ cv::Mat box_filter_kxk( const cv::Mat& src_image )
         for ( int col_i = 0; col_i < dst_width; col_i++ )
         {
             // Take ceiling for rounding
-            T box_sum = T( kernel * kernel - 1 );
+            T box_sum = T( 0 );
             //#pragma LOOP_UNROLL
             for ( int kernel_row_i = 0; kernel_row_i < kernel; ++kernel_row_i )
             {
@@ -173,5 +173,60 @@ void extract_rgb_fmom_bayer( const cv::Mat& bayer_img, \
         }
     }
 }
+
+
+
+template <typename T>
+void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
+{
+    const T* img_ptr = (T*)img.data;
+    int src_height = img.size().height;
+    int src_width  = img.size().width;
+    int src_step   = img.step1();
+
+    for ( int row = start_idx_row; row < tile_size + start_idx_row; ++row )
+    {
+        const T* img_ptr_row = img_ptr + row * src_step;
+        for ( int col = start_idx_col; col < tile_size + start_idx_col; ++col )
+        {
+            printf("%u ", img_ptr_row[ col ] );
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+
+template< typename T>
+void print_img( const cv::Mat& img, int img_height = -1, int img_width = -1 )
+{
+    const T* img_ptr = (T*)img.data;
+    if ( img_height == -1 && img_width == -1 )
+    {
+        img_height = img.size().height;
+        img_width = img.size().width;
+    }
+    else
+    {
+        img_height = std::min( img.size().height, img_height );
+        img_width = std::min( img.size().width, img_width );
+    }
+    printf("Image size (h=%d, w=%d), Print range (h=0-%d, w=0-%d)]\n", \
+        img.size().height, img.size().width, img_height, img_width );
+
+    int img_step = img.step1();
+
+    for ( int row = 0; row < img_height; ++row )
+    {
+        const T* img_ptr_row = img_ptr + row * img_step;
+        for ( int col = 0; col < img_width; ++col )
+        {
+            printf("%u ", img_ptr_row[ col ]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 
 } // namespace hdrplus

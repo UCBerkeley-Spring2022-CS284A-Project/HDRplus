@@ -8,6 +8,7 @@ void test_align_one_level(int argc, char** argv)
     if ( argc != 3 )
     {
         printf("Usage ./test_align BUTST_PATH REF_PATH");
+        exit(-1);
     }
 
     printf("Burst img dir %s\n", argv[1]);

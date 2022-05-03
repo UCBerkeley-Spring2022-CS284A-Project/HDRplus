@@ -11,7 +11,7 @@ int main( int argc, char** argv )
     }
 
     hdrplus::burst burst_image( argv[1], argv[2] );
-    printf("number of image in burst %d\n", burst_image.bayer_images.size() );
+    printf("number of image in burst %ld\n", burst_image.bayer_images.size() );
     printf("grayscale image shape (h=%d, w=%d)\n", \
         burst_image.bayer_images[ 0 ].grayscale_image.size().height,
         burst_image.bayer_images[ 0 ].grayscale_image.size().width );
