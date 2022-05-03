@@ -61,7 +61,7 @@ class finish
         ~finish() = default;
 
         // finish pipeline func
-        void pipeline_finish();
+        void process(std::string burstPath, std::string mergedBayerPath,int refIdx);
 
         // replace Mat a with Mat b
         void copy_mat_16U(cv::Mat& A, cv::Mat B);

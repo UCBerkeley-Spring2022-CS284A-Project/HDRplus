@@ -495,9 +495,14 @@ namespace hdrplus
         return sharpImage;
     }
 
-    void finish::pipeline_finish(){
+    void finish::process(std::string burstPath, std::string mergedBayerPath,int refIdx){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
+
+        this->refIdx = refIdx;
+        this->burstPath = burstPath;
+        this->mergedBayer = loadFromCSV(mergedBayerPath, CV_16UC1);
+        load_rawPathList(burstPath);
 
 // read in ref img
         bayer_image* ref = new bayer_image(rawPathList[refIdx]);
