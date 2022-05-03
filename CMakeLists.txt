@@ -85,8 +85,6 @@ add_executable( test_burst tests/test_burst.cpp )
 target_link_libraries( test_burst 
   ${PROJECT_NAME} )
 
-add_executable( test_align tests/test_align.cpp ${src_files} )
+add_executable( test_align tests/test_align.cpp )
 target_link_libraries( test_align 
-  ${OpenCV_LIBS}
-  ${LIBRAW_LIBRARY}
-  exiv2lib )
+  ${PROJECT_NAME} )
