@@ -173,7 +173,7 @@ class merge
                       float lambda_read);
 
         //temporal denoise
-        std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince);
+        std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> tiles, std::vector<cv::Mat> alt_imgs, std::vector<float> noise_variance, float temporal_factor);
         std::vector<cv::Mat> spatial_denoise(std::vector<cv::Mat> tiles, int num_alts, std::vector<float> noise_variance, float spatial_factor);
 
 

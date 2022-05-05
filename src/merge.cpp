@@ -23,14 +23,15 @@ namespace hdrplus
         cv::imwrite("ref.jpg", reference_image);
 
         // Get raw channels
-        std::vector<cv::Mat> channels(4, cv::Mat::zeros(reference_image.rows / 2, reference_image.cols / 2, CV_16U));
+        std::vector<cv::Mat> channels(4);
         hdrplus::extract_rgb_fmom_bayer<uint16_t>(reference_image, channels[0], channels[1], channels[2], channels[3]);
 
+        std::vector<cv::Mat> processed_channels(4);
         // For each channel, perform denoising and merge
         for (int i = 0; i < 4; ++i) {
             // Get channel mat
             cv::Mat channel_i = channels[i];
-            // cv::imwrite("ref" + std::to_string(i) + ".jpg", channel_i);
+            cv::imwrite("ref" + std::to_string(i) + ".jpg", channel_i);
             
             //we should be getting the individual channel in the same place where we call the processChannel function with the reference channel in its arguments
             //possibly we could add another argument in the processChannel function which is the channel_i for the alternate image. maybe using a loop to cover all the other images
@@ -42,7 +43,7 @@ namespace hdrplus
 
                     //get alternate image
                     cv::Mat alt_image = burst_images.bayer_images_pad[j];
-                    std::vector<cv::Mat> alt_channels(4, cv::Mat::zeros(reference_image.rows / 2, reference_image.cols / 2, CV_16U));
+                    std::vector<cv::Mat> alt_channels(4);
                     hdrplus::extract_rgb_fmom_bayer<uint16_t>(alt_image, alt_channels[0], alt_channels[1], alt_channels[2], alt_channels[3]);
 
                     alternate_channel_i_list.push_back(alt_channels[i]);
@@ -51,10 +52,10 @@ namespace hdrplus
 
             // Apply merging on the channel
             cv::Mat merged_channel = processChannel(burst_images, alignments, channel_i, alternate_channel_i_list, lambda_shot, lambda_read);
-            // cv::imwrite("merged" + std::to_string(i) + ".jpg", merged_channel);
+            cv::imwrite("merged" + std::to_string(i) + ".jpg", merged_channel);
 
             // Put channel raw data back to channels
-            merged_channel.convertTo(channels[i], CV_16U);
+            merged_channel.convertTo(processed_channels[i], CV_16U);
         }
 
         // Write all channels back to a bayer mat
@@ -63,8 +64,8 @@ namespace hdrplus
         for (y = 0; y < reference_image.rows; ++y){
             uint16_t* row = merged.ptr<uint16_t>(y);
             if (y % 2 == 0){
-                uint16_t* i0 = channels[0].ptr<uint16_t>(y / 2);
-                uint16_t* i1 = channels[1].ptr<uint16_t>(y / 2);
+                uint16_t* i0 = processed_channels[0].ptr<uint16_t>(y / 2);
+                uint16_t* i1 = processed_channels[1].ptr<uint16_t>(y / 2);
 
                 for (x = 0; x < reference_image.cols;){
                     //R
@@ -77,8 +78,8 @@ namespace hdrplus
                 }
             }
             else {
-                uint16_t* i2 = channels[2].ptr<uint16_t>(y / 2);
-                uint16_t* i3 = channels[3].ptr<uint16_t>(y / 2);
+                uint16_t* i2 = processed_channels[2].ptr<uint16_t>(y / 2);
+                uint16_t* i3 = processed_channels[3].ptr<uint16_t>(y / 2);
 
                 for(x = 0; x < reference_image.cols;){
                     //G2
@@ -195,12 +196,12 @@ namespace hdrplus
         
         std::vector<cv::Mat> spatial_denoised_tiles = spatial_denoise(reference_tiles_DFT, alternate_channel_i_list.size(), noise_variance, 0.1);
         //apply the cosineWindow2D over the merged_channel_tiles_spatial and reconstruct the image
-        reference_tiles = spatial_denoised_tiles; //now reference tiles are temporally and spatially denoised
+        // reference_tiles = spatial_denoised_tiles; //now reference tiles are temporally and spatially denoised
         ////
         reference_tiles_DFT = spatial_denoised_tiles;
         // Apply IFFT on reference tiles (frequency to spatial)
         std::vector<cv::Mat> denoised_tiles;
-        for (auto dft_tile : reference_tiles) {
+        for (auto dft_tile : reference_tiles_DFT) {
             cv::Mat denoised_tile;
             cv::dft(dft_tile, denoised_tile, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT);
             denoised_tile.convertTo(denoised_tile, CV_16U);
@@ -219,7 +220,7 @@ namespace hdrplus
         return mergeTiles(windowed_tiles, channel_image.rows, channel_image.cols);
     }
         
-    std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince) {
+    std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> tiles, std::vector<cv::Mat> alt_imgs, std::vector<float> noise_variance, float temporal_factor) {
         //goal: temporially denoise using the weiner filter
         //input:
         //1. array of 2D dft tiles of the reference image
