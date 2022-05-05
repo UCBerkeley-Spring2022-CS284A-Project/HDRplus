@@ -196,7 +196,7 @@ namespace hdrplus
         //apply the cosineWindow2D over the merged_channel_tiles_spatial and reconstruct the image
         //reference_tiles = spatial_denoised_tiles; //now reference tiles are temporally and spatially denoised
         ////
-
+        reference_tiles_DFT = spatial_denoised_tiles;
         // Apply IFFT on reference tiles (frequency to spatial)
         std::vector<cv::Mat> denoised_tiles;
         for (auto dft_tile : reference_tiles_DFT) {
@@ -218,91 +218,138 @@ namespace hdrplus
         return mergeTiles(windowed_tiles, channel_image.rows, channel_image.cols);
     }
         
-    // std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince) {
-    //     //goal: temporially denoise using the weiner filter
-    //     //input:
-    //     //1. array of 2D dft tiles of the reference image
-    //     //2. array of 2D dft tiles ocf the aligned alternate image
-    //     //3. estimated noise varaince
-    //     //4. temporal factor
-    //     //return: merged image patches dft
+    std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince) {
+        //goal: temporially denoise using the weiner filter
+        //input:
+        //1. array of 2D dft tiles of the reference image
+        //2. array of 2D dft tiles ocf the aligned alternate image
+        //3. estimated noise varaince
+        //4. temporal factor
+        //return: merged image patches dft
         
         
         
-    //     //tile_size = TILE_SIZE;
+        //tile_size = TILE_SIZE;
         
-    //     double temporal_factor = 8.0 //8 by default
+     
 
-    //     double temporal_noise_scaling = (pow(TILE_SIZE,2) * (1.0/16*2))*temporal_factor;
-
-    //     //start calculating the merged image tiles fft
+        //start calculating the merged image tiles fft
      
         
-    //     //get the tiles of the alternate image as a list
+        //get the tiles of the alternate image as a list
 
-    //     std::vector<std::vector<cv::Mat>> alternate_channel_i_tile_list; //list of alt channel tiles
-    //     std::vector<std::vector<cv::Mat>> alternate_tiles_DFT_list; //list of alt channel tiles
+        std::vector<std::vector<cv::Mat>> alternate_channel_i_tile_list; //list of alt channel tiles
+        std::vector<std::vector<cv::Mat>> alternate_tiles_DFT_list; //list of alt channel tiles
 
-    //     for (auto alt_img_channel : alternate_channel_i_list) {
-    //         std::vector<uint16_t> alt_img_channel_tile = getReferenceTiles(alt_img_channel); //get tiles from alt image
-    //         alternate_channel_i_tile_list.push_back(alt_img_channel_tile)
+        for (auto alt_img_channel : alternate_channel_i_list) {
+            std::vector<uint16_t> alt_img_channel_tile = getReferenceTiles(alt_img_channel); //get tiles from alt image
+            alternate_channel_i_tile_list.push_back(alt_img_channel_tile)
 
-    //         std::vector<cv::Mat> alternate_tiles_DFT_list;
-    //         for (auto alt_tile : alt_img_channel_tile) {
-    //             cv::Mat alt_tile_DFT;
-    //             alt_tile.convertTo(alt_tile_DFT, CV_32F);
-    //             cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
-    //             alternate_tiles_DFT_list.push_back(alt_tile_DFT);
-    //         }
-    //         alternate_tiles_DFT_list.push_back(alternate_tiles_DFT);
-    //     }
+            std::vector<cv::Mat> alternate_tiles_DFT;
+            for (auto alt_tile : alt_img_channel_tile) {
+                cv::Mat alt_tile_DFT;
+                alt_tile.convertTo(alt_tile_DFT, CV_32F);
+                cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
+                alternate_tiles_DFT.push_back(alt_tile_DFT);
+            }
+            alternate_tiles_DFT_list.push_back(alternate_tiles_DFT);
+        }
 
-    //     //get the dft of the alternate image
-    //     //std::vector<cv::Mat> alternate_tiles_DFT;
-
-
+        //get the dft of the alternate image
+        //std::vector<cv::Mat> alternate_tiles_DFT;
 
 
-    //     //std::vector<cv::Mat> tile_differences = reference_tiles_DFT - alternate_tiles_DFT_list;
-
-    //     //find reference_tiles_DFT - alternate_tiles_DFT_list
-    //     std::vector<std::vector<cv::Mat>> tile_difference_list; //list of tile differences
-    //     for (auto individual_alternate_tile_DFT : alternate_tiles_DFT_list) {
-    //         std::vector<cv::Mat> single_tile_difference = reference_tiles_DFT - individual_alternate_tile_DFT;
-    //         tile_difference_list.push_back(single_tile_difference);
-    //     }
 
 
-    //    // std::vector<cv::Mat> tile_sq_asolute_diff = tile_differences; //squared absolute difference is tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+        //std::vector<cv::Mat> tile_differences = reference_tiles_DFT - alternate_tiles_DFT_list;
+
+        //find reference_tiles_DFT - alternate_tiles_DFT_list
+        // std::vector<std::vector<cv::Mat>> tile_difference_list; //list of tile differences
+        // for (auto individual_alternate_tile_DFT : alternate_tiles_DFT_list) {
+        //     std::vector<cv::Mat> single_tile_difference = reference_tiles_DFT - individual_alternate_tile_DFT;
+        //     tile_difference_list.push_back(single_tile_difference);
+        // }
+
+        // //find the squared absolute difference across all the tiles
+        // std::vector<cv::Mat> tile_sq_asolute_diff = tile_differences; //squared absolute difference is tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+        // std::vector<cv::Mat> copy_diff = tile_differences.clone(); //squared absolute difference is tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+
+        //get the real and imaginary components (real**2 + imag**2)
         
-    //     std::vector<cv::Mat> tile_sq_asolute_diff = tile_differences; //squared absolute difference is tile_differences.real**2 + tile_differnce.imag**2; //also tile_dist
+        // std::vector<cv::Mat> absolute_distance_list;
+        // for (auto individual_difference : tile_difference_list) {
+        //     cv::Mat copy_diff = individual_difference.clone();
+        //     for (int i = 0 ; i < individual_difference.rows; i++ ) {
+        //         //std::complex<double>* row_ptr = tile_sq_asolute_diff.ptr<std::complex<double>>(i);
+        //         for (int j = 0; j < individual_difference.cols*individual_difference.channels(); j++) {
+        //             std::complex<double> single_complex_num = individual_difference.at<std::complex<double>>(i,j);
+        //             copy_diff.at<std::complex<double>>(i,j) = math.pow(single_complex_num.real(),2)+math.pow(single_complex_num.imag(),2); //.real and .imag
+        //         }
+        //     }
 
-    //     //get the real and imaginary components
-    //     /*
-    //     std::vector<std::vector<cv::Mat>> absolute_difference_list;
-    //      for (auto individual_difference : tile_difference_list) {
-    //         for (int i =0; i < individual_difference.rows; i++ ) {
-    //             std::complex<double>* row_ptr = tile_sq_asolute_diff.ptr<std::complex<double>>(i);
-    //             for (int j = 0; j< individual_difference.cols*individual_difference.channels(); j++) {
-    //                  row_ptr = math.pow(individual_difference.at<std::complex<double>>(i,j).real(),2)+math.pow(individual_difference.at<std::complex<double>>(i,j).imag(),2); //.real and .imag
-    //             }
-    //         }
+        //     //std::vector<cv::Mat> single_tile_difference = individual_difference.at<std::complex<double>>(0,0).real(); //.real and .imag
+        //     absolute_distance_list.push_back(copy_diff);
+        // }
 
-    //         //std::vector<cv::Mat> single_tile_difference = individual_difference.at<std::complex<double>>(0,0).real(); //.real and .imag
-    //         absolute_difference_list.push_back(single_tile_difference);
-    //     }
-    //     */
+        
 
-    //     //find the squared absolute difference across all the tiles
+        //get shrinkage operator
+        //std::vector<cv::Mat>  A = tile_sq_asolute_diff/(tile_sq_asolute_diff+noise_variance)
+        //std::vector<cv::Mat>  A;
+
+        //get tile_sq_asolute_diff+noise_variance
+        // std::vector<cv::Mat> A_denominator;
+        // for (int i = 0; i < absolute_distance_list.size();i++){
+        //     cv::Mat noise_var_mat( noise_variance[i],absolute_distance_list[i].rows,absolute_distance_list[i].cols,CV_16U);
+        //     cv::Mat single_denominator = absolute_distance_list[i] + noise_var_mat;
+        //     A_denominator.push_back(single_denominator);
+        // }
+
+        // for (auto individual_distance : absolute_distance_list) {
+        //     cv::Mat single_A = 
+        // }
+    
+        //std::vector<cv::Mat> merged_image_tiles_fft = alternate_tiles_DFT_list + A * tile_differences;
 
 
-    //     std::vector<cv::Mat>  A = tile_sq_asolute_diff/(tile_sq_asolute_diff+noise_variance)
 
-    //     std::vector<cv::Mat> merged_image_tiles_fft = alternate_tiles_DFT_list + A * tile_differences;
+        //calculate noise scaling
+        double temporal_factor = 8.0 //8 by default
 
-    //     return merged_image_tiles_fft
+        double temporal_noise_scaling = (pow(TILE_SIZE,2) * (1.0/16*2))*temporal_factor;
 
-    // }
+        //loop across tiles
+
+        // Calculate absolute difference
+        
+        for (int i = 0; i < tiles.size(); ++i) {
+            cv::Mat tile = tiles[i];
+            //float coeff = noise_variance[i] / num_alts * spatial_noise_scaling;
+
+            // Calculate absolute difference
+            cv::Mat complexMats[2];
+            cv::split(tile, complexMats);               // planes[0] = Re(DFT(I)), planes[1] = Im(DFT(I))
+            cv::magnitude(complexMats[0], complexMats[1], complexMats[0]); // planes[0] = magnitude
+            cv::Mat absolute_diff = complexMats[0].mul(complexMats[0]);
+
+            //find shrinkage operator A
+
+            //create a mat of only the noise variance
+            cv::Mat noise_var_mat(noise_variance[i]*temporal_noise_scaling,absolute_diff.rows,absolute_diff.cols,CV_16U);
+            cv::Mat A_denom = absolute_diff+noise_var_mat;
+            cv::Mat A = cv::divide(absolute_diff,A_denom);
+
+            //update reference DFT
+            reference_tiles_DFT += alternate_tiles_DFT_list + cv::mul(A,absolute_diff);
+
+        }
+
+        //get average
+        reference_tiles_DFT = cv::divide(reference_tiles_DFT,tiles.size())
+
+        return reference_tiles_DFT
+
+    }
 
     // std::vector<cv::Mat> spatial_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince) {
         
