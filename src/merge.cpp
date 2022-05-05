@@ -355,7 +355,7 @@ namespace hdrplus
 
     std::vector<cv::Mat> merge::spatial_denoise(std::vector<cv::Mat> tiles, int num_alts, std::vector<float> noise_variance, float spatial_factor) {
         
-        double spatial_noise_scaling = (TILE_SIZE * TILE_SIZE * (1.0 / 16)) * spatial_factor;
+        double spatial_noise_scaling = ((1.0 / 16)) * spatial_factor;
 
         // Calculate |w| using ifftshift
         cv::Mat row_distances = cv::Mat::zeros(1, TILE_SIZE, CV_32F);
@@ -372,7 +372,7 @@ namespace hdrplus
         // Loop through all tiles
         for (int i = 0; i < tiles.size(); ++i) {
             cv::Mat tile = tiles[i];
-            float coeff = noise_variance[i] / num_alts * spatial_noise_scaling;
+            float coeff = noise_variance[i] / (num_alts + 1) * spatial_noise_scaling;
 
             // Calculate absolute difference
             cv::Mat complexMats[2];
@@ -386,7 +386,6 @@ namespace hdrplus
             cv::merge(std::vector<cv::Mat>{scale, scale}, scale);
             denoised.push_back(tile.mul(scale));
         }
-
         return denoised;
     }
     
