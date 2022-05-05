@@ -9,7 +9,7 @@ namespace hdrplus
 {
     
 
-    cv::Mat convert16bit2_8bit_(cv::Mat ans){
+    static cv::Mat convert16bit2_8bit_(cv::Mat ans){
         if(ans.type()==CV_16UC3){
             cv::MatIterator_<cv::Vec3w> it, end;
             for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
@@ -33,47 +33,47 @@ namespace hdrplus
         return ans;
     }
 
-    cv::Mat convert8bit2_16bit_(cv::Mat ans){
-        if(ans.type()==CV_8UC3){
-            ans.convertTo(ans, CV_16UC3);
-            cv::MatIterator_<cv::Vec3w> it, end;
-            for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
-            {
-                // std::cout<<sizeof (*it)[0] <<std::endl;
-                (*it)[0] *=(65535.0/255.0);
-                (*it)[1] *=(65535.0/255.0);
-                (*it)[2] *=(65535.0/255.0);
-            }
+    // static cv::Mat convert8bit2_16bit_(cv::Mat ans){
+    //     if(ans.type()==CV_8UC3){
+    //         ans.convertTo(ans, CV_16UC3);
+    //         cv::MatIterator_<cv::Vec3w> it, end;
+    //         for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
+    //         {
+    //             // std::cout<<sizeof (*it)[0] <<std::endl;
+    //             (*it)[0] *=(65535.0/255.0);
+    //             (*it)[1] *=(65535.0/255.0);
+    //             (*it)[2] *=(65535.0/255.0);
+    //         }
             
-        }else if(ans.type()==CV_8UC1){
-            ans.convertTo(ans, CV_16UC1);
-            u_int16_t* ptr = (u_int16_t*)ans.data;
-            int end = ans.rows*ans.cols;
-            for(int i=0;i<end;i++){
-                *(ptr+i) *=(65535.0/255.0);
-            }
+    //     }else if(ans.type()==CV_8UC1){
+    //         ans.convertTo(ans, CV_16UC1);
+    //         u_int16_t* ptr = (u_int16_t*)ans.data;
+    //         int end = ans.rows*ans.cols;
+    //         for(int i=0;i<end;i++){
+    //             *(ptr+i) *=(65535.0/255.0);
+    //         }
             
-        }else{
-            std::cout<<"Unsupported Data Type"<<std::endl;
-        }
-        return ans;
-    }
+    //     }else{
+    //         std::cout<<"Unsupported Data Type"<<std::endl;
+    //     }
+    //     return ans;
+    // }
 
-    cv::Mat convert8bit2_12bit_(cv::Mat ans){
-        // cv::Mat ans(I);
-        cv::MatIterator_<cv::Vec3w> it, end;
-        for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
-        {
-            // std::cout<<sizeof (*it)[0] <<std::endl;
-            (*it)[0] *=(2048.0/255.0);
-            (*it)[1] *=(2048.0/255.0);
-            (*it)[2] *=(2048.0/255.0);
-        }
-        ans.convertTo(ans, CV_16UC3);
-        return ans;
-    }
+    // static cv::Mat convert8bit2_12bit_(cv::Mat ans){
+    //     // cv::Mat ans(I);
+    //     cv::MatIterator_<cv::Vec3w> it, end;
+    //     for( it = ans.begin<cv::Vec3w>(), end = ans.end<cv::Vec3w>(); it != end; ++it)
+    //     {
+    //         // std::cout<<sizeof (*it)[0] <<std::endl;
+    //         (*it)[0] *=(2048.0/255.0);
+    //         (*it)[1] *=(2048.0/255.0);
+    //         (*it)[2] *=(2048.0/255.0);
+    //     }
+    //     ans.convertTo(ans, CV_16UC3);
+    //     return ans;
+    // }
 
-    uint16_t uGammaCompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent){
+    static uint16_t uGammaCompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent){
         // Normalize pixel val
         x/=USHRT_MAX;
         // check the val against the threshold
@@ -96,7 +96,7 @@ namespace hdrplus
         return (uint16_t)x;
     }
 
-    uint16_t uGammaDecompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent){
+    static uint16_t uGammaDecompress_1pix(float x, float threshold,float gainMin,float gainMax,float exponent){
         // Normalize pixel val
         x/=65535.0;
         // check the val against the threshold
@@ -118,7 +118,7 @@ namespace hdrplus
         return (uint16_t)x;
     }
 
-    cv::Mat uGammaCompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
+    static cv::Mat uGammaCompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
         if(m.type()==CV_16UC3){
             cv::MatIterator_<cv::Vec3w> it, end;
             for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
@@ -140,7 +140,7 @@ namespace hdrplus
         return m;
     }
 
-    cv::Mat uGammaDecompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
+    static cv::Mat uGammaDecompress_(cv::Mat m,float threshold,float gainMin,float gainMax,float exponent){
         if(m.type()==CV_16UC3){
             cv::MatIterator_<cv::Vec3w> it, end;
             for( it = m.begin<cv::Vec3w>(), end = m.end<cv::Vec3w>(); it != end; ++it)
@@ -163,7 +163,7 @@ namespace hdrplus
         return m;
     }
 
-    cv::Mat gammasRGB(cv::Mat img, bool mode){
+    static cv::Mat gammasRGB(cv::Mat img, bool mode){
         if(mode){// compress
             return uGammaCompress_(img,0.0031308, 12.92, 1.055, 1. / 2.4);
         }else{ // decompress
@@ -171,17 +171,26 @@ namespace hdrplus
         }
     }
 
-    void copy_mat_16U_2(u_int16_t* ptr_A, cv::Mat B){
-        // u_int16_t* ptr_A = (u_int16_t*)A.data;
-        u_int16_t* ptr_B = (u_int16_t*)B.data;
-        for(int r = 0; r < B.rows; r++) {
-            for(int c = 0; c < B.cols; c++) {
-                *(ptr_A+r*B.cols+c) = *(ptr_B+r*B.cols+c);
-            }
-        }
-    }
+//    void copy_mat_16U_2(u_int16_t* ptr_A, cv::Mat B){
+//         // u_int16_t* ptr_A = (u_int16_t*)A.data;
+//         u_int16_t* ptr_B = (u_int16_t*)B.data;
+//         for(int r = 0; r < B.rows; r++) {
+//             for(int c = 0; c < B.cols; c++) {
+//                 *(ptr_A+r*B.cols+c) = *(ptr_B+r*B.cols+c);
+//             }
+//         }
+//     }
+    // void copy_mat_16U_2(u_int16_t* ptr_A, cv::Mat B){
+    //     // u_int16_t* ptr_A = (u_int16_t*)A.data;
+    //     u_int16_t* ptr_B = (u_int16_t*)B.data;
+    //     for(int c = 0; c < B.cols; c++) {
+    //         for(int r = 0; r < B.rows; r++) {
+    //             *(ptr_A+c*B.rows+r) = *(ptr_B+c*B.rows+r);
+    //         }
+    //     }
+    // }
 
-    cv::Mat mean_(cv::Mat img){
+    static cv::Mat mean_(cv::Mat img){
         // initialize processedImg
         int H = img.rows;
         int W = img.cols;
@@ -202,7 +211,7 @@ namespace hdrplus
         return processedImg;
     }
 
-    double getMean(cv::Mat img){
+    static double getMean(cv::Mat img){
         u_int16_t* ptr = (u_int16_t*)img.data;
         int max_idx = img.rows*img.cols*img.channels();
         double sum=0;
@@ -214,23 +223,23 @@ namespace hdrplus
         return sum;
     }
 
-    cv::Mat matMultiply_scalar(cv::Mat img,float gain){
-        u_int16_t* ptr = (u_int16_t*)img.data;
-        int max_idx = img.rows*img.cols*img.channels();
-        for(int i=0;i<max_idx;i++){
-            double tmp = *(ptr+i)*gain;
-            if(tmp<0){
-                *(ptr+i)=0;
-            }else if(tmp>USHRT_MAX){
-                *(ptr+i) = USHRT_MAX;
-            }else{
-                *(ptr+i)=(u_int16_t)tmp;
-            }
-        }
-        return img;
-    }
+    // static cv::Mat matMultiply_scalar(cv::Mat img,float gain){
+    //     u_int16_t* ptr = (u_int16_t*)img.data;
+    //     int max_idx = img.rows*img.cols*img.channels();
+    //     for(int i=0;i<max_idx;i++){
+    //         double tmp = *(ptr+i)*gain;
+    //         if(tmp<0){
+    //             *(ptr+i)=0;
+    //         }else if(tmp>USHRT_MAX){
+    //             *(ptr+i) = USHRT_MAX;
+    //         }else{
+    //             *(ptr+i)=(u_int16_t)tmp;
+    //         }
+    //     }
+    //     return img;
+    // }
 
-    double getSaturated(cv::Mat img, double threshold){
+    static double getSaturated(cv::Mat img, double threshold){
         threshold *= USHRT_MAX;
         double count=0;
         u_int16_t* ptr = (u_int16_t*)img.data;
@@ -244,7 +253,7 @@ namespace hdrplus
 
     }
 
-    cv::Mat meanGain_(cv::Mat img,int gain){
+    static cv::Mat meanGain_(cv::Mat img,int gain){
         if(img.channels()!=3){
             std::cout<<"unsupport img type in meanGain_()"<<std::endl;
             return cv::Mat();
@@ -287,7 +296,7 @@ namespace hdrplus
 
     }
 
-    cv::Mat applyScaling_(cv::Mat mergedImage, cv::Mat shortGray, cv::Mat fusedGray){
+    static cv::Mat applyScaling_(cv::Mat mergedImage, cv::Mat shortGray, cv::Mat fusedGray){
         cv::Mat result = mergedImage.clone();
         u_int16_t* ptr_shortg = (u_int16_t*)shortGray.data;
         u_int16_t* ptr_fusedg = (u_int16_t*)fusedGray.data;
@@ -314,7 +323,7 @@ namespace hdrplus
         return result;
     }
 
-    void localToneMap(cv::Mat& mergedImage, Options options, cv::Mat& shortg,
+    static void localToneMap(cv::Mat& mergedImage, Options options, cv::Mat& shortg,
          cv::Mat& longg, cv::Mat& fusedg, int& gain){
         std::cout<<"HDR Tone Mapping..."<<std::endl;
         // # Work with grayscale images
@@ -383,7 +392,7 @@ namespace hdrplus
         std::cout<<"--- Scale channels"<<std::endl;
     }
 
-    u_int16_t enhanceContrast_1pix(u_int16_t pix_val,double gain){
+    static u_int16_t enhanceContrast_1pix(u_int16_t pix_val,double gain){
         double x = pix_val;
         x/=USHRT_MAX;
         x = x - gain*sin(2*M_PI*x);
@@ -396,7 +405,7 @@ namespace hdrplus
         return result;
     }
 
-    cv::Mat enhanceContrast(cv::Mat image, Options options){
+    static cv::Mat enhanceContrast(cv::Mat image, Options options){
         if(options.gtmContrast>=0 && options.gtmContrast<=1){
             u_int16_t* ptr = (u_int16_t*)image.data;
             int end = image.rows*image.cols*image.channels();
@@ -409,7 +418,7 @@ namespace hdrplus
         return image;
     }
 
-    cv::Mat distL1_(cv::Mat X, cv::Mat Y){
+    static cv::Mat distL1_(cv::Mat X, cv::Mat Y){
         int end_x = X.rows*X.cols*X.channels();
         int end_y = Y.rows*Y.cols*Y.channels();
         cv::Mat result = cv::Mat(X.rows,X.cols,X.type());
@@ -430,7 +439,7 @@ namespace hdrplus
         return result;
     }
 
-    cv::Mat sharpenTriple_(cv::Mat image,
+    static cv::Mat sharpenTriple_(cv::Mat image,
         cv::Mat blur0, cv::Mat low0, float th0, float k0,
         cv::Mat blur1, cv::Mat low1, float th1, float k1,
         cv::Mat blur2, cv::Mat low2, float th2, float k2){
@@ -468,7 +477,7 @@ namespace hdrplus
             return result;
         }
 
-    cv::Mat sharpenTriple(cv::Mat image, Tuning tuning, Options options){
+    static cv::Mat sharpenTriple(cv::Mat image, Tuning tuning, Options options){
         // sharpen the image using unsharp masking
         std::vector<float> amounts = tuning.sharpenAmount;
         std::vector<float> sigmas = tuning.sharpenSigma;
@@ -493,6 +502,17 @@ namespace hdrplus
          blur2, low2, thresholds[2], amounts[2]);
         std::cout<<" --- sharpen"<<std::endl;
         return sharpImage;
+    }
+
+    void copy_mat_16U_3(u_int16_t* ptr_A, cv::Mat B){
+        // u_int16_t* ptr_A = (u_int16_t*)A.data;
+        u_int16_t* ptr_B = (u_int16_t*)B.data;
+        int H = B.rows;
+        int W = B.cols;
+        int end = H*W;
+        for(int i=0;i<end;i++){
+            *(ptr_A+i) = *(ptr_B+i);
+        }
     }
 
     void finish::process(std::string burstPath, std::string mergedBayerPath,int refIdx){
@@ -529,7 +549,7 @@ namespace hdrplus
 
 // get the bayer_image of the merged image
         bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
-        copy_mat_16U_2(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
+        copy_mat_16U_3(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
         cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);
 
 // write merged image
