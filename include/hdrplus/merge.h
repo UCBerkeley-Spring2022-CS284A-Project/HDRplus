@@ -6,6 +6,8 @@
 #include "hdrplus/burst.h"
 
 #define TILE_SIZE 16
+#define TEMPORAL_FACTOR 75
+#define SPATIAL_FACTOR 0.1
 
 namespace hdrplus
 {
@@ -173,7 +175,7 @@ class merge
                       float lambda_read);
 
         //temporal denoise
-        std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> tiles, std::vector<cv::Mat> alt_imgs, std::vector<float> noise_variance, float temporal_factor);
+        std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> tiles, std::vector<std::vector<cv::Mat>> alt_tiles, std::vector<float> noise_variance, float temporal_factor);
         std::vector<cv::Mat> spatial_denoise(std::vector<cv::Mat> tiles, int num_alts, std::vector<float> noise_variance, float spatial_factor);
 
 
