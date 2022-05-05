@@ -97,6 +97,7 @@ namespace hdrplus
         cv::Range horizontal = cv::Range(padding[2], reference_image.cols - padding[3]);
         cv::Range vertical = cv::Range(padding[0], reference_image.rows - padding[1]);
         burst_images.merged_bayer_image = merged(vertical, horizontal);
+        cv::imwrite("merged.jpg", burst_images.merged_bayer_image);
     }
 
     std::vector<cv::Mat> merge::getReferenceTiles(cv::Mat reference_image) {
@@ -192,14 +193,14 @@ namespace hdrplus
 
         ////adding after here
         
-        //std::vector<cv::Mat> spatial_denoised_tiles = spatial_denoise( reference_tiles,  reference_tiles_DFT, noise_varaince)
+        std::vector<cv::Mat> spatial_denoised_tiles = spatial_denoise(reference_tiles_DFT, alternate_channel_i_list.size(), noise_variance, 0.1);
         //apply the cosineWindow2D over the merged_channel_tiles_spatial and reconstruct the image
-        //reference_tiles = spatial_denoised_tiles; //now reference tiles are temporally and spatially denoised
+        reference_tiles = spatial_denoised_tiles; //now reference tiles are temporally and spatially denoised
         ////
 
         // Apply IFFT on reference tiles (frequency to spatial)
         std::vector<cv::Mat> denoised_tiles;
-        for (auto dft_tile : reference_tiles_DFT) {
+        for (auto dft_tile : reference_tiles) {
             cv::Mat denoised_tile;
             cv::dft(dft_tile, denoised_tile, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT);
             denoised_tile.convertTo(denoised_tile, CV_16U);
@@ -304,18 +305,42 @@ namespace hdrplus
 
     // }
 
-    // std::vector<cv::Mat> spatial_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince) {
+    std::vector<cv::Mat> merge::spatial_denoise(std::vector<cv::Mat> tiles, int num_alts, std::vector<float> noise_variance, float spatial_factor) {
         
-    //     double spatial_factor = 1; //to be added
-    //     double spatial_noise_scaling = (pow(TILE_SIZE,2) * (1.0/16*2))*spatial_factor;
+        double spatial_noise_scaling = (TILE_SIZE * TILE_SIZE * (1.0 / 16)) * spatial_factor;
 
-    //     //calculate the spatial denoising
-    //     spatial_tile_dist = reference_tiles.real**2 + reference_tiles.imag**2;
-    //     std::vector<cv::Mat> WienerCoeff = denoised_tiles*spatial_noise_scaling*noise_variance;
+        // Calculate |w| using ifftshift
+        cv::Mat row_distances = cv::Mat::zeros(1, TILE_SIZE, CV_32F);
+        for(int i = 0; i < TILE_SIZE; ++i) {
+            row_distances.at<float>(i) = i - offset;
+        }
+        row_distances = cv::repeat(row_distances.t(), 1, TILE_SIZE);
+        cv::Mat col_distances = row_distances.t();
+        cv::Mat distances;
+        cv::sqrt(row_distances.mul(row_distances) + col_distances.mul(col_distances), distances);
+        ifftshift(distances);
+        
+        std::vector<cv::Mat> denoised;
+        // Loop through all tiles
+        for (int i = 0; i < tiles.size(); ++i) {
+            cv::Mat tile = tiles[i];
+            float coeff = noise_variance[i] / num_alts * spatial_noise_scaling;
 
-    //     merged_channel_tiles_spatial = reference_tiles*spatial_tile_dist/(spatial_tile_dist+WienerCoeff)
+            // Calculate absolute difference
+            cv::Mat complexMats[2];
+            cv::split(tile, complexMats);               // planes[0] = Re(DFT(I)), planes[1] = Im(DFT(I))
+            cv::magnitude(complexMats[0], complexMats[1], complexMats[0]); // planes[0] = magnitude
+            cv::Mat absolute_diff = complexMats[0].mul(complexMats[0]);
+            
+            // Division
+            cv::Mat scale;
+            cv::divide(absolute_diff, absolute_diff + distances * coeff, scale);
+            cv::merge(std::vector<cv::Mat>{scale, scale}, scale);
+            denoised.push_back(tile.mul(scale));
+        }
 
-    // }
+        return denoised;
+    }
     
 
 } // namespace hdrplus
