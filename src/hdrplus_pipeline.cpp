@@ -27,7 +27,7 @@ void hdrplus_pipeline::run_pipeline( \
     merge_module.process( burst_images, alignments );
 
     // Run finishing
-    finish_module.process( burst_path, mergedBayer, refIdx);
+    finish_module.process( burst_path, burst_images.merged_bayer_image, burst_images.reference_image_idx);
 }
 
 } // namespace hdrplus

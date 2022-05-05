@@ -232,5 +232,4 @@ void print_img( const cv::Mat& img, int img_height = -1, int img_width = -1 )
     printf("\n");
 }
 
-
 } // namespace hdrplus
