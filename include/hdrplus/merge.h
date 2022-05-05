@@ -106,8 +106,6 @@ class merge
                       std::vector<cv::Mat> alternate_channel_i_list,\
                       float lambda_shot, \
                       float lambda_read);
-        
-        std::vector<ushort> getChannels(cv::Mat input_image); //helper function
 
         //temporal denoise
         std::vector<cv::Mat> temporal_denoise(std::vector<cv::Mat> reference_tiles, std::vector<cv::Mat> reference_tiles_DFT, std::vector<float> noise_varaince);
