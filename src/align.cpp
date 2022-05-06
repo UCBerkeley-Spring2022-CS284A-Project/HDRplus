@@ -12,6 +12,53 @@
 namespace hdrplus
 {
 
+// Function declration
+static void build_per_grayimg_pyramid( \
+    std::vector<cv::Mat>& images_pyramid, \
+    const cv::Mat& src_image, \
+    const std::vector<int>& inv_scale_factors );
+
+
+template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr >
+static void build_upsampled_prev_aligement( \
+    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
+    int num_tiles_h, int num_tiles_w );
+
+
+template< int tile_size >
+static void build_alignment_consider_neighbour( \
+    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
+    const cv::Mat& ref_img, const cv::Mat& alt_img );
+
+
+template< typename data_type, typename return_type, int tile_size >
+static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2, \
+    int img1_tile_row_start_idx, int img1_tile_col_start_idx, \
+    int img2_tile_row_start_idx, int img2_tile_col_start_idx );
+
+
+template< typename data_type, typename return_type, int tile_size >
+static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
+    int img1_tile_row_start_idx, int img1_tile_col_start_idx, \
+    int img2_tile_row_start_idx, int img2_tile_col_start_idx );
+
+
+static void align_image_level( \
+    const cv::Mat& ref_img, \
+    const cv::Mat& alt_img, \
+    std::vector<std::vector<std::pair<int, int>>>& prev_aligement, \
+    std::vector<std::vector<std::pair<int, int>>>& curr_alignment, \
+    int scale_factor_prev_curr, \
+    int curr_tile_size, \
+    int prev_tile_size, \
+    int search_radiou, \
+    int distance_type );
+
+
+// Function Implementations
+
 
 // static function only visible within file
 static void build_per_grayimg_pyramid( \
@@ -43,23 +90,23 @@ static void build_per_grayimg_pyramid( \
             downsample_image = src_image;
             break;
         case 2:
-            //printf("downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
+            printf("(2) downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
             // // Gaussian blur
-            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
+            //cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
         
             // // Downsample
-            downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
-            //downsample_image = downsample_nearest_neighbour<uint16_t, 2>( images_pyramid.at( i-1 ) );
+            //downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
+            downsample_image = downsample_nearest_neighbour<uint16_t, 2>( images_pyramid.at( i-1 ) );
 
             // Add
             images_pyramid.at( i ) = downsample_image.clone();
 
             break;
         case 4:
-            printf("downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
-            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
-            downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
-            //downsample_image = downsample_nearest_neighbour<uint16_t, 4>( images_pyramid.at( i-1 ) );
+            printf("(4) downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
+            //cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
+            //downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
+            downsample_image = downsample_nearest_neighbour<uint16_t, 4>( images_pyramid.at( i-1 ) );
             images_pyramid.at( i ) = downsample_image.clone();
             break;
         default:
@@ -80,7 +127,7 @@ static void build_upsampled_prev_aligement( \
 
     constexpr int repeat_factor = pyramid_scale_factor_prev_curr / tilesize_scale_factor_prev_curr;
 
-    // printf("build_upsampled_prev_aligement with scale factor %d, repeat factor %d, tile size factor %d\n", \
+    printf("build_upsampled_prev_aligement with scale factor %d, repeat factor %d, tile size factor %d\n", \
         pyramid_scale_factor_prev_curr, repeat_factor, tilesize_scale_factor_prev_curr );
 
     int dst_height = src_height * repeat_factor;
@@ -117,6 +164,127 @@ static void build_upsampled_prev_aligement( \
         }
     }
 }
+
+
+static bool operator==( const std::pair<int, int>& lhs, const std::pair<int, int>& rhs ) 
+{
+    return lhs.first == rhs.first && lhs.second == rhs.second;
+}
+
+
+static bool operator!=( const std::pair<int, int>& lhs, const std::pair<int, int>& rhs ) 
+{
+    return lhs.first != rhs.first || lhs.second != rhs.second;
+}
+
+
+template< int tile_size >
+static void build_alignment_consider_neighbour( \
+    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
+    const cv::Mat& ref_img, const cv::Mat& alt_img )
+{
+    int num_tiles_h = src_alignment.size();
+    int num_tiles_w = src_alignment.at( 0 ).size();
+
+    // Distance function
+    unsigned long long (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = \
+        &l1_distance<uint16_t, unsigned long long, tile_size>;
+
+    // Copy the alignment information
+    // Below double for loop will only replace the change one
+    dst_alignment = src_alignment;
+
+    // Main part of the loop
+    for ( int tile_row_i = 1; tile_row_i < num_tiles_h - 1; tile_row_i++ )
+    {
+        for ( int tile_col_i = 1; tile_col_i < num_tiles_w - 1; tile_col_i++ )
+        {
+            const auto& curr_align_i = src_alignment[ tile_row_i ][ tile_col_i ];
+
+            // Container for nbr alignment pair
+            std::vector<std::pair<int, int>> nbrs_align_i; 
+
+            // Consider 4 neighbour's alignment
+            // Only compute distance if alignment is different
+            const auto& nbr1_align_i = src_alignment[ tile_row_i + 0 ][ tile_col_i - 1 ];
+            if ( curr_align_i != nbr1_align_i ) nbrs_align_i.emplace_back( nbr1_align_i );
+
+            const auto& nbr2_align_i = src_alignment[ tile_row_i + 0 ][ tile_col_i + 1 ];
+            if ( curr_align_i != nbr2_align_i ) nbrs_align_i.emplace_back( nbr2_align_i );
+
+            const auto& nbr3_align_i = src_alignment[ tile_row_i - 1 ][ tile_col_i + 0 ];
+            if ( curr_align_i != nbr3_align_i ) nbrs_align_i.emplace_back( nbr3_align_i );
+
+            const auto& nbr4_align_i = src_alignment[ tile_row_i + 1 ][ tile_col_i + 0 ];
+            if ( curr_align_i != nbr4_align_i ) nbrs_align_i.emplace_back( nbr4_align_i );
+
+            // If there is a nbr alignment that need to be considered. Compute distance
+            if ( ! nbrs_align_i.empty() )
+            {
+                int ref_tile_row_start_idx_i = tile_row_i * tile_size / 2;
+                int ref_tile_col_start_idx_i = tile_col_i * tile_size / 2;
+
+                // curr_align_i's distance
+                auto curr_align_i_distance = distance_func_ptr(
+                    ref_img, alt_img, \
+                    ref_tile_row_start_idx_i, \
+                    ref_tile_col_start_idx_i, \
+                    ref_tile_row_start_idx_i + curr_align_i.first, \
+                    ref_tile_col_start_idx_i + curr_align_i.second );
+
+                for ( const auto& nbr_align_i : nbrs_align_i )
+                {
+                    auto nbr_align_i_distance = distance_func_ptr(
+                        ref_img, alt_img, \
+                        ref_tile_row_start_idx_i, \
+                        ref_tile_col_start_idx_i, \
+                        ref_tile_row_start_idx_i + nbr_align_i.first, \
+                        ref_tile_col_start_idx_i + nbr_align_i.second );
+                    
+                    if ( nbr_align_i_distance < curr_align_i_distance )
+                    {
+                        printf("tile [%d, %d] update align, prev align (%d, %d) curr align (%d, %d), prev distance %d curr distance %d\n", \
+                            tile_row_i, tile_col_i, \
+                            curr_align_i.first, curr_align_i.second, \
+                            nbr_align_i.first, nbr_align_i.second, \
+                            int(curr_align_i_distance), int(nbr_align_i_distance) );
+
+                        dst_alignment[ tile_row_i ][ tile_col_i ] = nbr_align_i;
+                        curr_align_i_distance = nbr_align_i_distance;                        
+                    }
+
+                }
+            }
+        }
+    }
+
+    // Border part of the loop
+    // TOP
+    // {
+    //     int tile_row_i = 0;
+    //     for ( int tile_col_i = 1; tile_col_i < num_tiles_w - 1; ++tile_col_i )
+    //     {
+
+    //     }
+    // }
+
+    // TOP LEFT corner
+
+    // RIGHT
+
+    // TOP RIGHT corner
+
+    // LEFT
+
+    // BOTTOM LEFT corner
+
+    // BOTTOM
+
+    // BOTTOM RIGHT CORNER
+
+
+} // end of build_alignment_consider_neighbour
 
 
 // Set tilesize as template argument for better compiler optimization result.
@@ -245,7 +413,7 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
 }
 
 
-void align_image_level( \
+static void align_image_level( \
     const cv::Mat& ref_img, \
     const cv::Mat& alt_img, \
     std::vector<std::vector<std::pair<int, int>>>& prev_aligement, \
@@ -316,6 +484,16 @@ void align_image_level( \
         }
     }
 
+    void (*alignment_nbr_func_ptr)( std::vector<std::vector<std::pair<int, int>>>&, std::vector<std::vector<std::pair<int, int>>>& dst_alignment, const cv::Mat&, const cv::Mat& ) = nullptr;
+    if ( curr_tile_size == 8 )
+    {
+        alignment_nbr_func_ptr = &build_alignment_consider_neighbour<8>;
+    }
+    else if ( curr_tile_size == 16 )
+    {
+        alignment_nbr_func_ptr = &build_alignment_consider_neighbour<16>;
+    }
+
     int num_tiles_h = ref_img.size().height / (curr_tile_size / 2) - 1;
     int num_tiles_w = ref_img.size().width / (curr_tile_size / 2 ) - 1;
 
@@ -332,18 +510,20 @@ void align_image_level( \
     // Upsample previous level alignment 
     else
     {
-        upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement, num_tiles_h, num_tiles_w );
+        std::vector<std::vector<std::pair<int, int>>> upsampled_prev_aligement_tmp;
+        upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement_tmp, num_tiles_h, num_tiles_w );
+        alignment_nbr_func_ptr( upsampled_prev_aligement_tmp, upsampled_prev_aligement, ref_img, alt_img );
 
-        // printf("\n!!!!!Upsampled previous alignment\n");
-        // for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
-        // {
-        //     for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
-        //     {
-        //         const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
-        //         printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
-        //             tile_row, tile_col, tile_start.first, tile_start.second);
-        //     }
-        // }
+        printf("\n!!!!!Upsampled previous alignment\n");
+        for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
+        {
+            for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
+            {
+                const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
+                printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
+                    tile_row, tile_col, tile_start.first, tile_start.second);
+            }
+        }
 
     }
 
@@ -492,60 +672,27 @@ void align_image_level( \
         }
     }
 
-    // printf("\n!!!!!Min distance for each tile \n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
-    //     {
-    //         printf("tile (%d, %d) distance %u\n", \
-    //             tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
-    //     }
-    // }
-
-    // printf("\n!!!!!Alignment at current level\n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
-    //     {
-    //         const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
-    //         printf("tile (%d, %d) -> start idx (%d, %d)\n", \
-    //             tile_row, tile_col, tile_start.first, tile_start.second);
-    //     }
-    // }
-
-}
-
-
-static void build_per_pyramid_reftiles_start( \
-    std::vector<std::vector<std::vector<std::pair<int, int>>>>& per_pyramid_reftiles_start, \
-    const std::vector<std::vector<cv::Mat>>& per_grayimg_pyramid, \
-    const std::vector<int>& grayimg_tile_sizes )
-{
-    per_pyramid_reftiles_start.resize( per_grayimg_pyramid.at(0).size() );
-
-    // Every image pyramid level
-    for ( int level_i = 0; level_i < per_grayimg_pyramid.at(0).size(); level_i++ )
+    printf("\n!!!!!Min distance for each tile \n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
     {
-        int level_i_img_h = per_grayimg_pyramid.at(0).at( level_i ).size().height;
-        int level_i_img_w = per_grayimg_pyramid.at(0).at( level_i ).size().width;
-
-        int level_i_tile_size = grayimg_tile_sizes.at( level_i );
-
-        int num_tiles_h = level_i_img_h / (level_i_tile_size / 2) - 1;
-        int num_tiles_w = level_i_img_w / (level_i_tile_size / 2) - 1;
-
-        // Allocate memory
-        per_pyramid_reftiles_start.at( level_i ).resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w ) );
-
-        for ( int tile_col_i = 0; tile_col_i < num_tiles_h; tile_col_i++ )
+        for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
         {
-            for ( int tile_row_j = 0; tile_row_j < num_tiles_w; tile_row_j++ )
-            {
-                per_pyramid_reftiles_start.at( level_i ).at( tile_col_i ).at( tile_row_j ) \
-                    = std::make_pair<int, int>( tile_col_i * level_i_tile_size, tile_row_j * level_i_tile_size );
-            }
+            printf("tile (%d, %d) distance %u\n", \
+                tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
         }
     }
+
+    printf("\n!!!!!Alignment at current level\n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+        {
+            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+                tile_row, tile_col, tile_start.first, tile_start.second);
+        }
+    }
+
 }
 
 
@@ -634,8 +781,8 @@ void align::process( const hdrplus::burst& burst_images, \
             // printf("@@@Alignment at level %d is h=%d, w=%d", level_i, curr_alignment.size(), curr_alignment.at(0).size() );
 
             // Stop at second iteration
-            // if ( level_i == num_levels - 3 )
-            //     break;
+            if ( level_i == num_levels - 2 )
+                break;
 
         } // for pyramid level
 
