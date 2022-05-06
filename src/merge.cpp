@@ -24,7 +24,7 @@ namespace hdrplus
 
         // Get raw channels
         std::vector<cv::Mat> channels(4);
-        hdrplus::extract_rgb_fmom_bayer<uint16_t>(reference_image, channels[0], channels[1], channels[2], channels[3]);
+        hdrplus::extract_rgb_fmom_bayer<uint16_t>(reference_image, channels[0], channels[2], channels[1], channels[3]);
 
         std::vector<cv::Mat> processed_channels(4);
         // For each channel, perform denoising and merge
@@ -182,7 +182,7 @@ namespace hdrplus
         for (auto ref_tile : reference_tiles) {
             cv::Mat ref_tile_DFT;
             ref_tile.convertTo(ref_tile_DFT, CV_32F);
-            cv::dft(ref_tile_DFT, ref_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
+            cv::dft(ref_tile_DFT, ref_tile_DFT, cv::DFT_COMPLEX_OUTPUT);
             reference_tiles_DFT.push_back(ref_tile_DFT);
         }
 
@@ -206,7 +206,7 @@ namespace hdrplus
                     // Apply FFT
                     cv::Mat alt_tile_DFT;
                     alt_tile.convertTo(alt_tile_DFT, CV_32F);
-                    cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_SCALE | cv::DFT_COMPLEX_OUTPUT);
+                    cv::dft(alt_tile_DFT, alt_tile_DFT, cv::DFT_COMPLEX_OUTPUT);
                     alt_tiles.push_back(alt_tile_DFT);
                 }
                 alt_tiles_list[y * num_tiles_col + x] = alt_tiles;
@@ -215,7 +215,7 @@ namespace hdrplus
 
         // 4.2 Temporal Denoising
         reference_tiles_DFT = temporal_denoise(reference_tiles_DFT, alt_tiles_list, noise_variance, TEMPORAL_FACTOR);
-        
+
         // 4.3 Spatial Denoising
         reference_tiles_DFT = spatial_denoise(reference_tiles_DFT, alternate_channel_i_list.size(), noise_variance, SPATIAL_FACTOR);
         //now reference tiles are temporally and spatially denoised
@@ -224,8 +224,8 @@ namespace hdrplus
         std::vector<cv::Mat> denoised_tiles;
         for (auto dft_tile : reference_tiles_DFT) {
             cv::Mat denoised_tile;
+            cv::divide(dft_tile, TILE_SIZE * TILE_SIZE, dft_tile);
             cv::dft(dft_tile, denoised_tile, cv::DFT_INVERSE | cv::DFT_REAL_OUTPUT);
-            denoised_tile.convertTo(denoised_tile, CV_16U);
             denoised_tiles.push_back(denoised_tile);
         }
         reference_tiles = denoised_tiles;
@@ -251,13 +251,13 @@ namespace hdrplus
         // return: merged image patches dft
 
         // calculate noise scaling
-        double temporal_noise_scaling = ((2.0 / 16)) * TEMPORAL_FACTOR;
+        double temporal_noise_scaling = (TILE_SIZE * TILE_SIZE * (2.0 / 16)) * TEMPORAL_FACTOR;
         
         // loop across tiles
         std::vector<cv::Mat> denoised;
         for (int i = 0; i < tiles.size(); ++i) {
             // sum of pairwise denoising
-            cv::Mat tile_sum = cv::Mat::zeros(TILE_SIZE, TILE_SIZE, CV_32FC2);
+            cv::Mat tile_sum = tiles[i].clone();
             double coeff = temporal_noise_scaling * noise_variance[i];
 
             // Ref tile
@@ -295,7 +295,7 @@ namespace hdrplus
 
     std::vector<cv::Mat> merge::spatial_denoise(std::vector<cv::Mat> tiles, int num_alts, std::vector<float> noise_variance, float spatial_factor) {
         
-        double spatial_noise_scaling = ((1.0 / 16)) * spatial_factor;
+        double spatial_noise_scaling = (TILE_SIZE * TILE_SIZE * (1.0 / 16)) * spatial_factor;
 
         // Calculate |w| using ifftshift
         cv::Mat row_distances = cv::Mat::zeros(1, TILE_SIZE, CV_32F);
