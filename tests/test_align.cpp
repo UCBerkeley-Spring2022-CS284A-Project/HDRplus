@@ -41,9 +41,9 @@ void test_align_one_level(int argc, char** argv)
         hdrplus::extract_rgb_from_bayer<uint16_t>( bayer_image_pad, rggb_imgs.at(0), rggb_imgs.at(1), rggb_imgs.at(2), rggb_imgs.at(3) );
 
         // Get tile of each channel with the alignments
-        int tilesize = 16; // tile size of grayscale image
-        int num_tiles_h = rggb_imgs.at(0).size().height / ( tilesize / 2 ) - 1;
-        int num_tiles_w = rggb_imgs.at(0).size().width / ( tilesize / 2 ) - 1;
+        int tile_size = 16; // tile size of grayscale image
+        int num_tiles_h = rggb_imgs.at(0).size().height / ( tile_size / 2 ) - 1;
+        int num_tiles_w = rggb_imgs.at(0).size().width / ( tile_size / 2 ) - 1;
 
         for ( int img_channel = 0; img_channel < int(rggb_imgs.size()); ++img_channel )
         {
@@ -51,8 +51,8 @@ void test_align_one_level(int argc, char** argv)
             {
                 for ( int tile_col_i = 0; tile_col_i < num_tiles_w; ++tile_col_i )
                 {
-                    int ref_tile_row_start_idx_i = tile_row_i * tilesize / 2;
-                    int ref_tile_col_start_idx_i = tile_col_i * tilesize / 2;
+                    int ref_tile_row_start_idx_i = tile_row_i * tile_size / 2;
+                    int ref_tile_col_start_idx_i = tile_col_i * tile_size / 2;
 
                     int alignment_row_i = alignment.at( tile_row_i ).at( tile_col_i ).first;
                     int alignment_col_i = alignment.at( tile_row_i ).at( tile_col_i ).second;
@@ -62,7 +62,7 @@ void test_align_one_level(int argc, char** argv)
                     int alt_tile_col_start_idx_i = ref_tile_col_start_idx_i + alignment_col_i;
 
                     printf("\nAlt img align channel %d tile [%d, %d]\n", img_channel, tile_row_i, tile_col_i );
-                    hdrplus::print_tile<uint16_t>( rggb_imgs.at( img_channel ), tilesize, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+                    hdrplus::print_tile<uint16_t>( rggb_imgs.at( img_channel ), tile_size, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
                 }
             }
         }
