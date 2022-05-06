@@ -495,18 +495,61 @@ namespace hdrplus
         return sharpImage;
     }
 
+    void copy_mat_16U_3(u_int16_t* ptr_A, cv::Mat B){
+        // u_int16_t* ptr_A = (u_int16_t*)A.data;
+        u_int16_t* ptr_B = (u_int16_t*)B.data;
+        int H = B.rows;
+        int W = B.cols;
+        int end = H*W;
+        for(int i=0;i<end;i++){
+            *(ptr_A+i) = *(ptr_B+i);
+        }
+    }
+
+    // void copy_mat_16U_3(u_int16_t* ptr_A, cv::Mat B){
+    //     // u_int16_t* ptr_A = (u_int16_t*)A.data;
+    //     u_int16_t* ptr_B = (u_int16_t*)B.data;
+    //     for(int r = 0; r < B.rows; r++) {
+    //         for(int c = 0; c < B.cols; c++) {
+    //             *(ptr_A+r*B.cols+c) = *(ptr_B+r*B.cols+c);
+    //         }
+    //     }
+    // }
+    cv::Mat processMergedMat(cv::Mat mergedImg, int opencv_type){
+        cv::Mat m;
+        u_int16_t* ptr = (u_int16_t*)mergedImg.data;
+        for(int r = 0; r < mergedImg.rows; r++) {
+            std::vector<int> dvals;
+            for(int c = 0; c < mergedImg.cols; c++) {
+                dvals.push_back(*(ptr+r*mergedImg.cols+c));
+            }
+            cv::Mat mline(dvals, true);
+            cv::transpose(mline, mline);
+            m.push_back(mline);
+        }
+        int ch = CV_MAT_CN(opencv_type);
+
+        m = m.reshape(ch);
+        m.convertTo(m, opencv_type);
+        
+        return m;
+
+    }
+
     void finish::process(std::string burstPath, cv::Mat mergedBayer,int refIdx){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
 
         this->refIdx = refIdx;
         this->burstPath = burstPath;
-        this->mergedBayer = mergedBayer;//loadFromCSV(mergedBayerPath, CV_16UC1);
+        this->mergedBayer = loadFromCSV("merged_haohua.csv", CV_16UC1);// processMergedMat(mergedBayer,CV_16UC1);//loadFromCSV(mergedBayerPath, CV_16UC1);
         load_rawPathList(burstPath);
 
 // read in ref img
         bayer_image* ref = new bayer_image(rawPathList[refIdx]);
         cv::Mat processedRefImage = postprocess(ref->libraw_processor,params.rawpyArgs);
+
+        std::cout<<"size ref: "<<processedRefImage.rows<<"*"<<processedRefImage.cols<<std::endl;
 
 // write reference image
         if(params.flags["writeReferenceImage"]){
@@ -529,7 +572,8 @@ namespace hdrplus
 
 // get the bayer_image of the merged image
         bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
-        copy_mat_16U_2(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
+        // mergedImg->libraw_processor->imgdata.rawdata.raw_image = (uint16_t*)mergedBayer.data;
+        copy_mat_16U_3(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
         cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);
 
 // write merged image
