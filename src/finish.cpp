@@ -546,24 +546,27 @@ namespace hdrplus
         }
     }
 
-    void finish::process(std::string burstPath, cv::Mat mergedBayer,int refIdx){
+    void finish::process(const hdrplus::burst& burst_images){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
 
-        this->refIdx = refIdx;
-        this->burstPath = burstPath;
-        // this->mergedBayer = processMergedMat(mergedBayer,CV_16UC1);//loadFromCSV("merged.csv", CV_16UC1);
+        this->refIdx = burst_images.reference_image_idx;
+        // this->burstPath = burstPath;
+        // std::cout<<"processMerged:"<<std::endl;
+        // show20_20(mergedB);
+        // this->mergedBayer = processMergedMat(mergedB,CV_16UC1);//loadFromCSV("merged.csv", CV_16UC1);
         // std::cout<<"processMerged:"<<std::endl;
         // show20_20(this->mergedBayer);
         this->mergedBayer = loadFromCSV("merged.csv", CV_16UC1);
         std::cout<<"csv:"<<std::endl;
-        show20_20(this->mergedBayer);
-        load_rawPathList(burstPath);
+        // show20_20(this->mergedBayer);
+        // load_rawPathList(burstPath);
 
         
 
 // read in ref img
-        bayer_image* ref = new bayer_image(rawPathList[refIdx]);
+        // bayer_image* ref = new bayer_image(rawPathList[refIdx]);
+        bayer_image* ref = new bayer_image(burst_images.bayer_images[this->refIdx]);
         cv::Mat processedRefImage = postprocess(ref->libraw_processor,params.rawpyArgs);
 
         std::cout<<"size ref: "<<processedRefImage.rows<<"*"<<processedRefImage.cols<<std::endl;
@@ -588,7 +591,8 @@ namespace hdrplus
         }
 
 // get the bayer_image of the merged image
-        bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
+        // bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
+        bayer_image* mergedImg  = new bayer_image(burst_images.bayer_images[this->refIdx]);
         mergedImg->libraw_processor->imgdata.rawdata.raw_image = (uint16_t*)this->mergedBayer.data;
         // copy_mat_16U_3(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
         cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);

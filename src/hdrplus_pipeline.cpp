@@ -34,23 +34,12 @@ void hdrplus_pipeline::run_pipeline( \
     // Run merging
     merge_module.process( burst_images, alignments );
 
-    cv::Mat mergedBayer = burst_images.merged_bayer_image.clone();
-
-    std::cout<<std::endl<<"size: "<<mergedBayer.rows<<"*"<<mergedBayer.cols<<std::endl;
-
-    // for(int i=0;i<20;i++){
-    //     u_int16_t* ptr = (u_int16_t*)mergedBayer.data;
-    //     for(int j=0;j<20;j++){
-    //         std::cout<<*(ptr+i*mergedBayer.cols+j)<<", ";
-    //     }
-    //     std::cout<<std::endl;
-    // }
-
-    hdrplus::writeCSV("merged.csv",mergedBayer);
+    // save merged Image value
+    hdrplus::writeCSV("merged.csv",burst_images.merged_bayer_image);
 
 
     // Run finishing
-    finish_module.process( burst_path, burst_images.merged_bayer_image, burst_images.reference_image_idx);
+    finish_module.process( burst_images);
 }
 
 } // namespace hdrplus
