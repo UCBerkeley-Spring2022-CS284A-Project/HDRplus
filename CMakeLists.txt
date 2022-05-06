@@ -37,6 +37,9 @@ message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
 message(STATUS "Found Exiv2 and linked")
 
+# OpenMP
+find_package(OpenMP REQUIRED)
+
 # library
 include_directories( include )
 
@@ -60,7 +63,8 @@ add_library(${PROJECT_NAME} SHARED ${src_files} )
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY}
-  exiv2lib )
+  exiv2lib
+  PRIVATE OpenMP::OpenMP_CXX )
 
 # example
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )

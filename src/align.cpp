@@ -5,6 +5,7 @@
 #include <utility> // std::make_pair
 #include <stdexcept> // std::runtime_error
 #include <opencv2/opencv.hpp> // all opencv header
+#include <omp.h>
 #include "hdrplus/align.h"
 #include "hdrplus/burst.h"
 #include "hdrplus/utility.h"
@@ -97,6 +98,7 @@ static void build_upsampled_prev_aligement( \
     dst_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
 
     // Upsample alignment
+    #pragma omp parallel for collapse(2)
     for ( int row_i = 0; row_i < src_height; row_i++ )
     {
         for ( int col_i = 0; col_i < src_width; col_i++ )
@@ -110,10 +112,12 @@ static void build_upsampled_prev_aligement( \
             UNROLL_LOOP( repeat_factor )
             for ( int repeat_row_i = 0; repeat_row_i < repeat_factor; ++repeat_row_i )
             {
+                int repeat_row_i_offset = row_i * repeat_factor + repeat_row_i;
                 UNROLL_LOOP( repeat_factor )
                 for ( int repeat_col_i = 0; repeat_col_i < repeat_factor; ++repeat_col_i )
                 {
-                    dst_alignment[ row_i * repeat_factor + repeat_row_i ][ col_i * repeat_factor + repeat_col_i ] = align_i;
+                    int repeat_col_i_offset = col_i * repeat_factor + repeat_col_i;
+                    dst_alignment[ repeat_row_i_offset ][ repeat_col_i_offset ] = align_i;
                 }
             }
         }
@@ -163,7 +167,8 @@ static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2,
     }
 
     return_type sum(0);
-    // TODO: add pragma unroll here
+
+    UNROLL_LOOP( tile_size )
     for ( int row_i = 0; row_i < tile_size; ++row_i )
     {
         const data_type* img1_ptr_row_i = img1_ptr + (img1_tile_row_start_idx + row_i) * img1_step + img1_tile_col_start_idx;
@@ -229,7 +234,8 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
     // print_tile<data_type>( img2, tile_size, img2_tile_row_start_idx, img2_tile_col_start_idx );
 
     return_type sum(0);
-    // TODO: add pragma unroll here
+
+    UNROLL_LOOP( tile_size )
     for ( int row_i = 0; row_i < tile_size; ++row_i )
     {
         const data_type* img1_ptr_row_i = img1_ptr + (img1_tile_row_start_idx + row_i) * img1_step + img1_tile_col_start_idx;
@@ -385,10 +391,13 @@ void align_image_level( \
     std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
 
     /* Iterate through all reference tile & compute distance */
+    #pragma omp parallel for collapse(2)
     for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
     {
         for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
         {
+            printf("num omp thread %d\n", omp_get_num_threads() );
+
             // Upper left index of reference tile
             int ref_tile_row_start_idx_i = ref_tile_row_i * curr_tile_size / 2;
             int ref_tile_col_start_idx_i = ref_tile_col_i * curr_tile_size / 2;
