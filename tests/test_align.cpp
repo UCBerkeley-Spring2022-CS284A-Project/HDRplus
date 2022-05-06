@@ -43,7 +43,7 @@ void test_align_one_level(int argc, char** argv)
         int num_tiles_h = rggb_imgs.at(0).size().height / ( tilesize / 2 ) - 1;
         int num_tiles_w = rggb_imgs.at(0).size().width / ( tilesize / 2 ) - 1;
 
-        for ( int img_channel = 0; img_channel < rggb_imgs.size(); ++img_channel )
+        for ( int img_channel = 0; img_channel < int(rggb_imgs.size()); ++img_channel )
         {
             for ( int tile_row_i = 0; tile_row_i < num_tiles_h; ++tile_row_i )
             {

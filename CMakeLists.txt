@@ -6,8 +6,8 @@ project(hdrplus)
 # set c++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wall")
 
 # make sure we use Release and warn otherwise
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

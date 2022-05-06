@@ -3,19 +3,30 @@
 #include <string>
 #include <stdexcept> // std::runtime_error
 #include <opencv2/opencv.hpp> // all opencv header
-// TODO: add openmp support
 
-#if defined(__clang__)
-    #define LOOP_UNROLL unroll
-#elif defined(__GNUC__) || defined(__GNUG__)
-    #define LOOP_UNROLL GCC unroll
-#elif defined(_MSC_VER)
-    #define LOOP_UNROLL unroll
+// https://stackoverflow.com/questions/63404539/portable-loop-unrolling-with-template-parameter-in-c-with-gcc-icc
+/// Helper macros for stringification
+#define TO_STRING_HELPER(X)   #X
+#define TO_STRING(X)          TO_STRING_HELPER(X)
+
+// Define loop unrolling depending on the compiler
+#if defined(__ICC) || defined(__ICL)
+  #define UNROLL_LOOP(n)      _Pragma(TO_STRING(unroll (n)))
+#elif defined(__clang__)
+  #define UNROLL_LOOP(n)      _Pragma(TO_STRING(unroll (n)))
+#elif defined(__GNUC__) && !defined(__clang__)
+  #define UNROLL_LOOP(n)      _Pragma(TO_STRING(GCC unroll (16)))
+#elif defined(_MSC_BUILD)
+  #pragma message ("Microsoft Visual C++ (MSVC) detected: Loop unrolling not supported!")
+  #define UNROLL_LOOP(n)
+#else
+  #warning "Unknown compiler: Loop unrolling not supported!"
+  #define UNROLL_LOOP(n)
 #endif
+
 
 namespace hdrplus
 {
-
 
 
 template <typename T, int kernel>
@@ -45,10 +56,11 @@ cv::Mat box_filter_kxk( const cv::Mat& src_image )
         {
             // Take ceiling for rounding
             T box_sum = T( 0 );
-            //#pragma LOOP_UNROLL
+            
+            UNROLL_LOOP( kernel )
             for ( int kernel_row_i = 0; kernel_row_i < kernel; ++kernel_row_i )
             {
-                //#pragma LOOP_UNROLL
+                UNROLL_LOOP( kernel )
                 for ( int kernel_col_i = 0; kernel_col_i < kernel; ++kernel_col_i )
                 {
                     box_sum += src_image_ptr[ ( row_i * kernel + kernel_row_i ) * src_step + ( col_i * kernel + kernel_col_i ) ];
@@ -84,6 +96,7 @@ cv::Mat downsample_nearest_neighbour( const cv::Mat& src_image )
     // -03 should be enough to optimize below code
     for ( int row_i = 0; row_i < dst_height; row_i++ )
     {
+        UNROLL_LOOP( 32 )
         for ( int col_i = 0; col_i < dst_width; col_i++ )
         {
             dst_image_ptr[ row_i * dst_step + col_i ] = \
@@ -184,8 +197,6 @@ template <typename T>
 void print_tile( const cv::Mat& img, int tile_size, int start_idx_row, int start_idx_col )
 {
     const T* img_ptr = (T*)img.data;
-    int src_height = img.size().height;
-    int src_width  = img.size().width;
     int src_step   = img.step1();
 
     for ( int row = start_idx_row; row < tile_size + start_idx_row; ++row )

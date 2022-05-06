@@ -30,7 +30,7 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     // Find reference image path in input directory
     // reference image path need to be absolute path
     reference_image_idx = -1;
-    for ( int i = 0; i < bayer_image_paths.size(); ++i )
+    for ( size_t i = 0; i < bayer_image_paths.size(); ++i )
     {
         if ( bayer_image_paths[ i ] == reference_image_path )
         {
