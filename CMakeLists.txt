@@ -29,7 +29,7 @@ include_directories( BEFORE ${OpenCV_INCLUDE_DIRS} )
 message(STATUS "Found OpenCV ${OpenCV_INCLUDE_DIRS} ${OpenCV_LIBS}")
 
 # LibRaw-cmake
-find_library(LIBRAW_LIBRARY NAMES raw raw_r)
+find_library(LIBRAW_LIBRARY 0.20 NAMES raw raw_r)
 include_directories( BEFORE "/usr/local/include/")
 message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 
