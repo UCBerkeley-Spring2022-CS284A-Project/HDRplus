@@ -8,6 +8,7 @@
 #include <hdrplus/bayer_image.h>
 #include <dirent.h>
 #include <hdrplus/params.h>
+#include <hdrplus/burst.h>
 
 namespace hdrplus
 {
@@ -61,7 +62,8 @@ class finish
         ~finish() = default;
 
         // finish pipeline func
-        void process(std::string burstPath, cv::Mat mergedBayer,int refIdx);
+        // void process(std::string burstPath, cv::Mat mergedBayer,int refIdx);
+        void process(const hdrplus::burst& burst_images);
 
         // replace Mat a with Mat b
         void copy_mat_16U(cv::Mat& A, cv::Mat B);
