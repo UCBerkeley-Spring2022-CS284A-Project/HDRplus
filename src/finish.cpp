@@ -542,7 +542,7 @@ namespace hdrplus
 
         this->refIdx = refIdx;
         this->burstPath = burstPath;
-        this->mergedBayer = loadFromCSV("merged_haohua.csv", CV_16UC1);// processMergedMat(mergedBayer,CV_16UC1);//loadFromCSV(mergedBayerPath, CV_16UC1);
+        this->mergedBayer = loadFromCSV("merged.csv", CV_16UC1);// processMergedMat(mergedBayer,CV_16UC1);//loadFromCSV(mergedBayerPath, CV_16UC1);
         load_rawPathList(burstPath);
 
 // read in ref img
@@ -572,8 +572,8 @@ namespace hdrplus
 
 // get the bayer_image of the merged image
         bayer_image* mergedImg = new bayer_image(rawPathList[refIdx]);
-        // mergedImg->libraw_processor->imgdata.rawdata.raw_image = (uint16_t*)mergedBayer.data;
-        copy_mat_16U_3(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
+        mergedImg->libraw_processor->imgdata.rawdata.raw_image = (uint16_t*)mergedBayer.data;
+        // copy_mat_16U_3(mergedImg->libraw_processor->imgdata.rawdata.raw_image,this->mergedBayer);
         cv::Mat processedMerge = postprocess(mergedImg->libraw_processor,params.rawpyArgs);
 
 // write merged image
