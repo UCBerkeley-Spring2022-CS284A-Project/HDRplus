@@ -64,7 +64,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY}
   exiv2lib
-  PRIVATE OpenMP::OpenMP_CXX )
+  OpenMP::OpenMP_CXX )
 
 # example
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )

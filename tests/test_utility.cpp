@@ -4,7 +4,6 @@
 #include <opencv2/opencv.hpp>
 #include "hdrplus/utility.h"
 
-
 void test_downsample_nearest_neighbour( )
 {
     printf("\n###Test test_box_filter_kxk()###\n");

@@ -380,22 +380,22 @@ void align_image_level( \
     cv::Mat (*extract_alt_img_search)(const cv::Mat&, int, int) = nullptr;
     if ( curr_tile_size == 8 )
     {
-        if ( search_radious == 1 )
+        if ( search_radiou == 1 )
         {
             extract_alt_img_search = &extract_img_tile<uint16_t, 8+1*2>;
         }
-        else if ( search_radious == 4 )
+        else if ( search_radiou == 4 )
         {
             extract_alt_img_search = &extract_img_tile<uint16_t, 8+4*2>;
         }
     }
     else if ( curr_tile_size == 16 )
     {
-        if ( search_radious == 1 )
+        if ( search_radiou == 1 )
         {
             extract_alt_img_search = &extract_img_tile<uint16_t, 16+1*2>;
         }
-        else if ( search_radious == 4 )
+        else if ( search_radiou == 4 )
         {
             extract_alt_img_search = &extract_img_tile<uint16_t, 16+4*2>;
         }
