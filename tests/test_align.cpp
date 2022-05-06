@@ -36,7 +36,7 @@ void test_align_one_level(int argc, char** argv)
 
         // Create RGB channel
         std::vector<cv::Mat> rggb_imgs( 4 );
-        hdrplus::extract_rgb_fmom_bayer<uint16_t>( bayer_image_pad, rggb_imgs.at(0), rggb_imgs.at(1), rggb_imgs.at(2), rggb_imgs.at(3) );
+        hdrplus::extract_rgb_from_bayer<uint16_t>( bayer_image_pad, rggb_imgs.at(0), rggb_imgs.at(1), rggb_imgs.at(2), rggb_imgs.at(3) );
 
         // Get tile of each channel with the alignments
         int tilesize = 16; // tile size of grayscale image

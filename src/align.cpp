@@ -98,7 +98,7 @@ static void build_upsampled_prev_aligement( \
     dst_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
 
     // Upsample alignment
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for
     for ( int row_i = 0; row_i < src_height; row_i++ )
     {
         for ( int col_i = 0; col_i < src_width; col_i++ )
@@ -255,6 +255,45 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
 }
 
 
+template<typename T, int tile_size>
+static cv::Mat extract_img_tile( const cv::Mat& img, int img_tile_row_start_idx, int img_tile_col_start_idx )
+{
+    const T* img_ptr = (const T*)img.data;
+    int img_width = img.size().width;
+    int img_height = img.size().height;
+    int img_step = img.step1();
+
+    if ( img_tile_row_start_idx < 0 || img_tile_row_start_idx > img_height - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+    }
+
+    if ( img_tile_col_start_idx < 0 || img_tile_col_start_idx > img_width - tile_size )
+    {
+        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+    }
+
+    cv::Mat img_tile( tile_size, tile_size, img.type() );
+    T* img_tile_ptr = (T*)img_tile.data;
+    int img_tile_step = img_tile.step1();
+
+    UNROLL_LOOP( tile_size )
+    for ( int row_i = 0; row_i < tile_size; ++row_i )
+    {
+        const T* img_ptr_row_i = img_ptr + img_step * ( img_tile_row_start_idx + row_i );
+        T* img_tile_ptr_row_i = img_tile_ptr + img_tile_step * row_i;
+
+        UNROLL_LOOP( tile_size )
+        for ( int col_i = 0; col_i < tile_size; ++col_i )
+        {
+            img_tile_ptr_row_i[ col_i ] = img_ptr_row_i[ img_tile_col_start_idx + col_i ];
+        }
+    }
+
+    return img_tile;
+} 
+
+
 void align_image_level( \
     const cv::Mat& ref_img, \
     const cv::Mat& alt_img, \
@@ -326,6 +365,42 @@ void align_image_level( \
         }
     }
 
+    // Function to extract reference image tile for memory cache
+    cv::Mat (*extract_ref_img_tile)(const cv::Mat&, int, int) = nullptr;
+    if ( curr_tile_size == 8 )
+    {
+        extract_ref_img_tile = &extract_img_tile<uint16_t, 8>;
+    }
+    else if ( curr_tile_size == 16 )
+    {
+        extract_ref_img_tile = &extract_img_tile<uint16_t, 16>;
+    }
+
+    // Function to extract search image tile for memory cache
+    cv::Mat (*extract_alt_img_search)(const cv::Mat&, int, int) = nullptr;
+    if ( curr_tile_size == 8 )
+    {
+        if ( search_radious == 1 )
+        {
+            extract_alt_img_search = &extract_img_tile<uint16_t, 8+1*2>;
+        }
+        else if ( search_radious == 4 )
+        {
+            extract_alt_img_search = &extract_img_tile<uint16_t, 8+4*2>;
+        }
+    }
+    else if ( curr_tile_size == 16 )
+    {
+        if ( search_radious == 1 )
+        {
+            extract_alt_img_search = &extract_img_tile<uint16_t, 16+1*2>;
+        }
+        else if ( search_radious == 4 )
+        {
+            extract_alt_img_search = &extract_img_tile<uint16_t, 16+4*2>;
+        }
+    }
+
     int num_tiles_h = ref_img.size().height / (curr_tile_size / 2) - 1;
     int num_tiles_w = ref_img.size().width / (curr_tile_size / 2 ) - 1;
 
@@ -387,17 +462,15 @@ void align_image_level( \
     int alt_tile_row_idx_max = alt_img_pad.size().height - ( curr_tile_size + 2 * search_radiou );
     int alt_tile_col_idx_max = alt_img_pad.size().width  - ( curr_tile_size + 2 * search_radiou );
 
-    // TODO delete below distance vector, this is for debug only
-    std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
+    // Dlete below distance vector, this is for debug only
+    // std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
 
     /* Iterate through all reference tile & compute distance */
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for
     for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
     {
         for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
         {
-            printf("num omp thread %d\n", omp_get_num_threads() );
-
             // Upper left index of reference tile
             int ref_tile_row_start_idx_i = ref_tile_row_i * curr_tile_size / 2;
             int ref_tile_col_start_idx_i = ref_tile_col_i * curr_tile_size / 2;
@@ -434,6 +507,10 @@ void align_image_level( \
                 // printf("@@ change start y from %d to %d\n", before, alt_tile_col_idx_max );
             }
 
+            // Explicitly caching reference image tile
+            cv::Mat ref_img_tile_i = extract_ref_img_tile( ref_img, ref_tile_col_start_idx_i, ref_tile_col_start_idx_i );
+            cv::Mat alt_img_search_i = extract_alt_img_search( alt_img, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+
             // Because alternative image is padded with search radious. 
             // Using same coordinate with reference image will automatically considered search radious * 2
             // printf("Alt image tile [%d, %d]-> start idx [%d, %d]\n", \
@@ -453,9 +530,8 @@ void align_image_level( \
                     //     ref_tile_row_i, ref_tile_col_i, search_row_j - search_radiou, search_col_j - search_radiou );
 
                     // TODO: currently distance is incorrect
-                    unsigned long long distance_j = distance_func_ptr( ref_img, alt_img_pad, \
-                        ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
-                        alt_tile_row_start_idx_i + search_row_j, alt_tile_col_start_idx_i + search_col_j );
+                    unsigned long long distance_j = distance_func_ptr( ref_img_tile_i, alt_img_search_i, \
+                        0, 0, search_row_j, search_col_j );
 
                     // printf("<---tile at [%d, %d] search (%d, %d), new dis %llu, old dis %llu\n", \
                     //     ref_tile_row_i, ref_tile_col_i, search_row_j - search_radiou, search_col_j - search_radiou, distance_j, min_distance_i );
@@ -501,7 +577,7 @@ void align_image_level( \
 
             // Add min_distance_i's corresbonding idx as min
             curr_alignment.at( ref_tile_row_i ).at( ref_tile_col_i ) = alignment_i;
-            distances.at( ref_tile_row_i ).at( ref_tile_col_i ) = min_distance_i;
+            // distances.at( ref_tile_row_i ).at( ref_tile_col_i ) = min_distance_i;
         }
     }
 
@@ -552,6 +628,8 @@ void align::process( const hdrplus::burst& burst_images, \
     // exit(1);
 
     per_grayimg_pyramid.resize( burst_images.num_images );
+
+    #pragma omp parallel for
     for ( int img_idx = 0; img_idx < burst_images.num_images; ++img_idx )
     {
         // per_grayimg_pyramid[ img_idx ][ 0 ] is the original image

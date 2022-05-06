@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <omp.h>
 #include <opencv2/opencv.hpp> // all opencv header
 #include "hdrplus/burst.h"
 #include "hdrplus/utility.h"
@@ -74,18 +75,21 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     padding_info_bayer = std::vector<int>{ padding_top, padding_bottom, padding_left, padding_right };
 
     // Pad bayer image
-    for ( const auto& bayer_image_i : bayer_images )
+    bayer_images_pad.resize( bayer_images.size() );
+    grayscale_images_pad.resize( bayer_images.size() );
+
+    #pragma omp parallel for
+    for ( size_t img_i = 0; img_i < bayer_images.size(); ++img_i )
     {
         cv::Mat bayer_image_pad_i;
-        cv::copyMakeBorder( bayer_image_i.raw_image, \
+        cv::copyMakeBorder( bayer_images.at( img_i ).raw_image, \
                             bayer_image_pad_i, \
                             padding_top, padding_bottom, padding_left, padding_right, \
                             cv::BORDER_REFLECT );
-
-        // cv::Mat use internal reference count
-        bayer_images_pad.emplace_back( bayer_image_pad_i );
-        grayscale_images_pad.emplace_back( box_filter_kxk<uint16_t, 2>( bayer_image_pad_i ) );
-    } 
+        
+        bayer_images_pad.at( img_i ) = bayer_image_pad_i;
+        grayscale_images_pad.at( img_i ) = box_filter_kxk<uint16_t, 2>( bayer_image_pad_i );
+    }
 
     #ifndef NDEBUG
     printf("%s::%s Pad bayer image from (%d, %d) -> (%d, %d)\n", \

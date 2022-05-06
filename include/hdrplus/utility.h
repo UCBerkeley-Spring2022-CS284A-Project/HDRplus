@@ -96,7 +96,7 @@ cv::Mat downsample_nearest_neighbour( const cv::Mat& src_image )
     int dst_step = dst_image.step1();
 
     // -03 should be enough to optimize below code
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for ( int row_i = 0; row_i < dst_height; row_i++ )
     {
         UNROLL_LOOP( 32 )
@@ -142,10 +142,10 @@ void print_cvmat( cv::Mat image )
  * @return vector of RGB image. OpenCV internally maintain reference count. 
  *      Thus this step won't create deep copy overhead. 
  * 
- * @example extract_rgb_fmom_bayer<uint16_t>( bayer_img, rgb_vector_container );
+ * @example extract_rgb_from_bayer<uint16_t>( bayer_img, rgb_vector_container );
  */
 template <typename T>
-void extract_rgb_fmom_bayer( const cv::Mat& bayer_img, \
+void extract_rgb_from_bayer( const cv::Mat& bayer_img, \
     cv::Mat& img_ch1, cv::Mat& img_ch2, cv::Mat& img_ch3, cv::Mat& img_ch4 )
 {
     const T* bayer_img_ptr = (const T*)bayer_img.data;

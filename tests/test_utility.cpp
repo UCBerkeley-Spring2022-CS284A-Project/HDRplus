@@ -91,7 +91,7 @@ void test_extract_rgb_from_bayer()
     printf("\nbayer cv::Mat is \n");
     hdrplus::print_cvmat<uint16_t>( bayer_img );
 
-    hdrplus::extract_rgb_fmom_bayer<uint16_t>( bayer_img, red_img, green_img1, green_img2, blue_img );
+    hdrplus::extract_rgb_from_bayer<uint16_t>( bayer_img, red_img, green_img1, green_img2, blue_img );
 
     printf("\nRed cv::Mat is \n");
     hdrplus::print_cvmat<uint16_t>( red_img );
