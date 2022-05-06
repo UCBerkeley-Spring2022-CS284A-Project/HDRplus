@@ -546,9 +546,20 @@ namespace hdrplus
         }
     }
 
+    void writeCSV(std::string filename, cv::Mat m)
+    {
+        std::ofstream myfile;
+        myfile.open(filename.c_str());
+        myfile<< cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
+        myfile.close();
+    }
+
     void finish::process(const hdrplus::burst& burst_images){
         // copy mergedBayer to rawReference
         std::cout<<"finish pipeline start ..."<<std::endl;
+
+        // save merged Image value
+        writeCSV("merged.csv",burst_images.merged_bayer_image);
 
         this->refIdx = burst_images.reference_image_idx;
         // this->burstPath = burstPath;

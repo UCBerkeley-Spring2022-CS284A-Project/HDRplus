@@ -12,13 +12,6 @@
 
 namespace hdrplus
 {
-void writeCSV(std::string filename, cv::Mat m)
-{
-    std::ofstream myfile;
-    myfile.open(filename.c_str());
-    myfile<< cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
-    myfile.close();
-}
 
 void hdrplus_pipeline::run_pipeline( \
     const std::string& burst_path, \
@@ -33,10 +26,6 @@ void hdrplus_pipeline::run_pipeline( \
 
     // Run merging
     merge_module.process( burst_images, alignments );
-
-    // save merged Image value
-    hdrplus::writeCSV("merged.csv",burst_images.merged_bayer_image);
-
 
     // Run finishing
     finish_module.process( burst_images);
