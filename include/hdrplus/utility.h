@@ -51,7 +51,7 @@ cv::Mat box_filter_kxk( const cv::Mat& src_image )
     int dst_width  = dst_image.size().width; 
     int dst_step = dst_image.step1();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for ( int row_i = 0; row_i < dst_height; ++row_i )
     {
         for ( int col_i = 0; col_i < dst_width; col_i++ )
@@ -172,7 +172,7 @@ void extract_rgb_from_bayer( const cv::Mat& bayer_img, \
     T* img_ch3_ptr = (T*)img_ch3.data;
     T* img_ch4_ptr = (T*)img_ch4.data;
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for ( int rgb_row_i = 0; rgb_row_i < rgb_height; rgb_row_i++ )
     {
         int rgb_row_i_offset = rgb_row_i * rgb_step;

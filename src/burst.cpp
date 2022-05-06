@@ -75,20 +75,17 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     padding_info_bayer = std::vector<int>{ padding_top, padding_bottom, padding_left, padding_right };
 
     // Pad bayer image
-    bayer_images_pad.resize( bayer_images.size() );
-    grayscale_images_pad.resize( bayer_images.size() );
-
-    #pragma omp parallel for
-    for ( size_t img_i = 0; img_i < bayer_images.size(); ++img_i )
+    for ( const auto& bayer_image_i : bayer_images )
     {
         cv::Mat bayer_image_pad_i;
-        cv::copyMakeBorder( bayer_images.at( img_i ).raw_image, \
+        cv::copyMakeBorder( bayer_image_i.raw_image, \
                             bayer_image_pad_i, \
                             padding_top, padding_bottom, padding_left, padding_right, \
                             cv::BORDER_REFLECT );
-        
-        bayer_images_pad.at( img_i ) = bayer_image_pad_i;
-        grayscale_images_pad.at( img_i ) = box_filter_kxk<uint16_t, 2>( bayer_image_pad_i );
+
+        // cv::Mat use internal reference count
+        bayer_images_pad.emplace_back( bayer_image_pad_i );
+        grayscale_images_pad.emplace_back( box_filter_kxk<uint16_t, 2>( bayer_image_pad_i ) );
     }
 
     #ifndef NDEBUG

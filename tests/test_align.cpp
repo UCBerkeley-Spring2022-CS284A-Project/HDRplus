@@ -21,6 +21,8 @@ void test_align_one_level(int argc, char** argv)
     hdrplus::align align_module;
     align_module.process( burst_images, alignments );
 
+    exit(1);
+
     // Access alternative image tile in each channel
     // Below code can be use in merging part
     for ( int img_idx = 0; img_idx < burst_images.num_images; ++img_idx )

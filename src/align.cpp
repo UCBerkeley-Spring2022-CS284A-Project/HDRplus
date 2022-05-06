@@ -98,7 +98,7 @@ static void build_upsampled_prev_aligement( \
     dst_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
 
     // Upsample alignment
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for ( int row_i = 0; row_i < src_height; row_i++ )
     {
         for ( int col_i = 0; col_i < src_width; col_i++ )
@@ -148,12 +148,14 @@ static unsigned long long l1_distance( const cv::Mat& img1, const cv::Mat& img2,
     // Range check for safety
     if ( img1_tile_row_start_idx < 0 || img1_tile_row_start_idx > img1_height - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+        throw std::runtime_error("l1 distance img1_tile_row_start_idx" + std::to_string( img1_tile_row_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img1_height - tile_size ) + ")\n" );
     }
 
     if ( img1_tile_col_start_idx < 0 || img1_tile_col_start_idx > img1_width - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+        throw std::runtime_error("l1 distance img1_tile_col_start_idx" + std::to_string( img1_tile_col_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img1_width - tile_size ) + ")\n" );
     }
 
     if ( img2_tile_row_start_idx < 0 || img2_tile_row_start_idx > img2_height - tile_size )
@@ -210,22 +212,24 @@ static return_type l2_distance( const cv::Mat& img1, const cv::Mat& img2, \
     // Range check for safety
     if ( img1_tile_row_start_idx < 0 || img1_tile_row_start_idx > img1_height - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+        throw std::runtime_error("l2 distance img1_tile_row_start_idx" + std::to_string( img1_tile_row_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img1_height - tile_size ) + ")\n" );
     }
 
     if ( img1_tile_col_start_idx < 0 || img1_tile_col_start_idx > img1_width - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+        throw std::runtime_error("l2 distance img1_tile_col_start_idx" + std::to_string( img1_tile_col_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img1_width - tile_size ) + ")\n" );
     }
 
     if ( img2_tile_row_start_idx < 0 || img2_tile_row_start_idx > img2_height - tile_size )
     {
-        throw std::runtime_error("l1 distance img2_tile_row_start_idx out of valid range\n");
+        throw std::runtime_error("l2 distance img2_tile_row_start_idx out of valid range\n");
     }
 
     if ( img2_tile_col_start_idx < 0 || img2_tile_col_start_idx > img2_width - tile_size )
     {
-        throw std::runtime_error("l1 distance img2_tile_col_start_idx out of valid range\n");
+        throw std::runtime_error("l2 distance img2_tile_col_start_idx out of valid range\n");
     }
 
     // printf("Search two tile with ref : \n");
@@ -265,12 +269,14 @@ static cv::Mat extract_img_tile( const cv::Mat& img, int img_tile_row_start_idx,
 
     if ( img_tile_row_start_idx < 0 || img_tile_row_start_idx > img_height - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_row_start_idx out of valid range\n");
+        throw std::runtime_error("extract_img_tile img_tile_row_start_idx " + std::to_string( img_tile_row_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img_height - tile_size ) + ")\n" );
     }
 
     if ( img_tile_col_start_idx < 0 || img_tile_col_start_idx > img_width - tile_size )
     {
-        throw std::runtime_error("l1 distance img1_tile_col_start_idx out of valid range\n");
+        throw std::runtime_error("extract_img_tile img_tile_col_start_idx " + std::to_string( img_tile_col_start_idx ) + \
+        " out of valid range (0, " + std::to_string( img_width - tile_size ) + ")\n" );
     }
 
     cv::Mat img_tile( tile_size, tile_size, img.type() );
@@ -419,16 +425,16 @@ void align_image_level( \
     {
         upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement, num_tiles_h, num_tiles_w );
 
-        // printf("\n!!!!!Upsampled previous alignment\n");
-        // for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
-        // {
-        //     for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
-        //     {
-        //         const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
-        //         printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
-        //             tile_row, tile_col, tile_start.first, tile_start.second);
-        //     }
-        // }
+        printf("\n!!!!!Upsampled previous alignment\n");
+        for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
+        {
+            for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
+            {
+                const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
+                printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
+                    tile_row, tile_col, tile_start.first, tile_start.second);
+            }
+        }
 
     }
 
@@ -463,10 +469,10 @@ void align_image_level( \
     int alt_tile_col_idx_max = alt_img_pad.size().width  - ( curr_tile_size + 2 * search_radiou );
 
     // Dlete below distance vector, this is for debug only
-    // std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
+    std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
 
     /* Iterate through all reference tile & compute distance */
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
     {
         for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
@@ -508,8 +514,8 @@ void align_image_level( \
             }
 
             // Explicitly caching reference image tile
-            cv::Mat ref_img_tile_i = extract_ref_img_tile( ref_img, ref_tile_col_start_idx_i, ref_tile_col_start_idx_i );
-            cv::Mat alt_img_search_i = extract_alt_img_search( alt_img, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
+            cv::Mat ref_img_tile_i = extract_ref_img_tile( ref_img, ref_tile_row_start_idx_i, ref_tile_col_start_idx_i );
+            cv::Mat alt_img_search_i = extract_alt_img_search( alt_img_pad, alt_tile_row_start_idx_i, alt_tile_col_start_idx_i );
 
             // Because alternative image is padded with search radious. 
             // Using same coordinate with reference image will automatically considered search radious * 2
@@ -529,9 +535,17 @@ void align_image_level( \
                     // printf("\n--->tile at [%d, %d] search (%d, %d)\n", \
                     //     ref_tile_row_i, ref_tile_col_i, search_row_j - search_radiou, search_col_j - search_radiou );
 
-                    // TODO: currently distance is incorrect
+                    // unsigned long long distance_j = distance_func_ptr( ref_img, alt_img_pad, \
+                    //     ref_tile_row_start_idx_i, ref_tile_col_start_idx_i, \
+                    //     alt_tile_row_start_idx_i + search_row_j, alt_tile_col_start_idx_i + search_col_j );
+
+                    // unsigned long long distance_j = distance_func_ptr( ref_img_tile_i, alt_img_pad, \
+                    //     0, 0, \
+                    //     alt_tile_row_start_idx_i + search_row_j, alt_tile_col_start_idx_i + search_col_j );
+
                     unsigned long long distance_j = distance_func_ptr( ref_img_tile_i, alt_img_search_i, \
-                        0, 0, search_row_j, search_col_j );
+                        0, 0, \
+                        search_row_j, search_col_j );
 
                     // printf("<---tile at [%d, %d] search (%d, %d), new dis %llu, old dis %llu\n", \
                     //     ref_tile_row_i, ref_tile_col_i, search_row_j - search_radiou, search_col_j - search_radiou, distance_j, min_distance_i );
@@ -545,25 +559,25 @@ void align_image_level( \
                     }
 
                     // If same value, choose the one closer to the original tile location
-                    if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
-                    {
-                        int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
-                        int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
-                        int curr_distance_row_2_ref = search_row_j - search_radiou;
-                        int curr_distance_col_2_ref = search_col_j - search_radiou;
+                    // if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
+                    // {
+                    //     int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
+                    //     int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
+                    //     int curr_distance_row_2_ref = search_row_j - search_radiou;
+                    //     int curr_distance_col_2_ref = search_col_j - search_radiou;
 
-                        int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
-                        int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
+                    //     int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
+                    //     int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
 
-                        // previous min distance idx is farther away from ref tile start location
-                        if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
-                        {
-                            // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
-                            //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
-                            min_distance_col_i = search_col_j;
-                            min_distance_row_i = search_row_j;
-                        }
-                    }
+                    //     // previous min distance idx is farther away from ref tile start location
+                    //     if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
+                    //     {
+                    //         // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
+                    //         //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
+                    //         min_distance_col_i = search_col_j;
+                    //         min_distance_row_i = search_row_j;
+                    //     }
+                    // }
                 }
             }
 
@@ -577,30 +591,30 @@ void align_image_level( \
 
             // Add min_distance_i's corresbonding idx as min
             curr_alignment.at( ref_tile_row_i ).at( ref_tile_col_i ) = alignment_i;
-            // distances.at( ref_tile_row_i ).at( ref_tile_col_i ) = min_distance_i;
+            distances.at( ref_tile_row_i ).at( ref_tile_col_i ) = min_distance_i;
         }
     }
 
-    // printf("\n!!!!!Min distance for each tile \n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
-    //     {
-    //         printf("tile (%d, %d) distance %u\n", \
-    //             tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
-    //     }
-    // }
+    printf("\n!!!!!Min distance for each tile \n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
+        {
+            printf("tile (%d, %d) distance %u\n", \
+                tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
+        }
+    }
 
-    // printf("\n!!!!!Alignment at current level\n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
-    //     {
-    //         const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
-    //         printf("tile (%d, %d) -> start idx (%d, %d)\n", \
-    //             tile_row, tile_col, tile_start.first, tile_start.second);
-    //     }
-    // }
+    printf("\n!!!!!Alignment at current level\n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+        {
+            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+                tile_row, tile_col, tile_start.first, tile_start.second);
+        }
+    }
 
 }
 
@@ -629,7 +643,7 @@ void align::process( const hdrplus::burst& burst_images, \
 
     per_grayimg_pyramid.resize( burst_images.num_images );
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for ( int img_idx = 0; img_idx < burst_images.num_images; ++img_idx )
     {
         // per_grayimg_pyramid[ img_idx ][ 0 ] is the original image
