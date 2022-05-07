@@ -93,11 +93,11 @@ static void build_per_grayimg_pyramid( \
         case 2:
             // printf("(2) downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
             // // Gaussian blur
-            //cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
+            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
         
             // // Downsample
-            //downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
-            downsample_image = downsample_nearest_neighbour<uint16_t, 2>( images_pyramid.at( i-1 ) );
+            downsample_image = downsample_nearest_neighbour<uint16_t, 2>( blur_image );
+            // downsample_image = downsample_nearest_neighbour<uint16_t, 2>( images_pyramid.at( i-1 ) );
 
             // Add
             images_pyramid.at( i ) = downsample_image.clone();
@@ -105,9 +105,9 @@ static void build_per_grayimg_pyramid( \
             break;
         case 4:
             // printf("(4) downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
-            //cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
-            //downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
-            downsample_image = downsample_nearest_neighbour<uint16_t, 4>( images_pyramid.at( i-1 ) );
+            cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
+            downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
+            // downsample_image = downsample_nearest_neighbour<uint16_t, 4>( images_pyramid.at( i-1 ) );
             images_pyramid.at( i ) = downsample_image.clone();
             break;
         default:
@@ -117,38 +117,46 @@ static void build_per_grayimg_pyramid( \
 }
 
 
-template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr >
-static void build_upsampled_prev_aligement( \
-    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
-    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
-    int num_tiles_h, int num_tiles_w )
+static bool operator!=( const std::pair<int, int>& lhs, const std::pair<int, int>& rhs ) 
 {
-    int src_height = src_alignment.size();
-    int src_width = src_alignment[ 0 ].size();
+    return lhs.first != rhs.first || lhs.second != rhs.second;
+}
+
+
+template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr, int tile_size >
+static void build_upsampled_prev_aligement( \
+    const std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, \
+    int num_tiles_h, int num_tiles_w, \
+    const cv::Mat& ref_img, const cv::Mat& alt_img, \
+    bool consider_nbr = false )
+{
+    int src_num_tiles_h = src_alignment.size();
+    int src_num_tiles_w = src_alignment[ 0 ].size();
 
     constexpr int repeat_factor = pyramid_scale_factor_prev_curr / tilesize_scale_factor_prev_curr;
 
     // printf("build_upsampled_prev_aligement with scale factor %d, repeat factor %d, tile size factor %d\n", \
     //     pyramid_scale_factor_prev_curr, repeat_factor, tilesize_scale_factor_prev_curr );
 
-    int dst_height = src_height * repeat_factor;
-    int dst_width = src_width * repeat_factor;
+    int dst_num_tiles_main_h = src_num_tiles_h * repeat_factor;
+    int dst_num_tiles_main_w  = src_num_tiles_w * repeat_factor;
 
-    if ( dst_height > num_tiles_h || dst_width > num_tiles_w )
+    if ( dst_num_tiles_main_h > num_tiles_h || dst_num_tiles_main_w > num_tiles_w )
     {
         throw std::runtime_error("current level number of tiles smaller than upsampled tiles\n");
     }
 
     // Allocate data for dst_alignment
-    // NOTE: number of tiles h, number of tiles w might be different from dst_height, dst_width
-    // For tiles between num_tile_h and dst_height, use (0,0)
+    // NOTE: number of tiles h, number of tiles w might be different from dst_num_tiles_main_h, dst_num_tiles_main_w
+    // For tiles between num_tile_h and dst_num_tiles_main_h, use (0,0)
     dst_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
 
     // Upsample alignment
     #pragma omp parallel for collapse(2)
-    for ( int row_i = 0; row_i < src_height; row_i++ )
+    for ( int row_i = 0; row_i < src_num_tiles_h; row_i++ )
     {
-        for ( int col_i = 0; col_i < src_width; col_i++ )
+        for ( int col_i = 0; col_i < src_num_tiles_w; col_i++ )
         {
             // Scale alignment
             std::pair<int, int> align_i = src_alignment[ row_i ][ col_i ];
@@ -169,128 +177,95 @@ static void build_upsampled_prev_aligement( \
             }
         }
     }
-}
 
-
-static bool operator==( const std::pair<int, int>& lhs, const std::pair<int, int>& rhs ) 
-{
-    return lhs.first == rhs.first && lhs.second == rhs.second;
-}
-
-
-static bool operator!=( const std::pair<int, int>& lhs, const std::pair<int, int>& rhs ) 
-{
-    return lhs.first != rhs.first || lhs.second != rhs.second;
-}
-
-
-template< int tile_size >
-static void build_alignment_consider_neighbour( \
-    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
-    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
-    const cv::Mat& ref_img, const cv::Mat& alt_img )
-{
-    int num_tiles_h = src_alignment.size();
-    int num_tiles_w = src_alignment.at( 0 ).size();
-
-    // Distance function
-    unsigned long long (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = \
-        &l1_distance<uint16_t, unsigned long long, tile_size>;
-
-    // Copy the alignment information
-    // Below double for loop will only replace the change one
-    dst_alignment = src_alignment;
-
-    // Main part of the loop
-    for ( int tile_row_i = 1; tile_row_i < num_tiles_h - 1; tile_row_i++ )
+    if ( consider_nbr )
     {
-        for ( int tile_col_i = 1; tile_col_i < num_tiles_w - 1; tile_col_i++ )
+        // Copy consurtctor
+        std::vector<std::vector<std::pair<int, int>>> upsampled_alignment{ dst_alignment };
+
+        // Distance function
+        unsigned long long (*distance_func_ptr)(const cv::Mat&, const cv::Mat&, int, int, int, int) = \
+            &l1_distance<uint16_t, unsigned long long, tile_size>;
+
+        #pragma omp parallel for collapse(2)
+        for ( int tile_row_i = 0; tile_row_i < num_tiles_h; tile_row_i++ )
         {
-            const auto& curr_align_i = src_alignment[ tile_row_i ][ tile_col_i ];
-
-            // Container for nbr alignment pair
-            std::vector<std::pair<int, int>> nbrs_align_i; 
-
-            // Consider 4 neighbour's alignment
-            // Only compute distance if alignment is different
-            const auto& nbr1_align_i = src_alignment[ tile_row_i + 0 ][ tile_col_i - 1 ];
-            if ( curr_align_i != nbr1_align_i ) nbrs_align_i.emplace_back( nbr1_align_i );
-
-            const auto& nbr2_align_i = src_alignment[ tile_row_i + 0 ][ tile_col_i + 1 ];
-            if ( curr_align_i != nbr2_align_i ) nbrs_align_i.emplace_back( nbr2_align_i );
-
-            const auto& nbr3_align_i = src_alignment[ tile_row_i - 1 ][ tile_col_i + 0 ];
-            if ( curr_align_i != nbr3_align_i ) nbrs_align_i.emplace_back( nbr3_align_i );
-
-            const auto& nbr4_align_i = src_alignment[ tile_row_i + 1 ][ tile_col_i + 0 ];
-            if ( curr_align_i != nbr4_align_i ) nbrs_align_i.emplace_back( nbr4_align_i );
-
-            // If there is a nbr alignment that need to be considered. Compute distance
-            if ( ! nbrs_align_i.empty() )
+            for ( int tile_col_i = 0; tile_col_i < num_tiles_w; tile_col_i++ )
             {
-                int ref_tile_row_start_idx_i = tile_row_i * tile_size / 2;
-                int ref_tile_col_start_idx_i = tile_col_i * tile_size / 2;
+                const auto& curr_align_i = upsampled_alignment[ tile_row_i ][ tile_col_i ];
 
-                // curr_align_i's distance
-                auto curr_align_i_distance = distance_func_ptr(
-                    ref_img, alt_img, \
-                    ref_tile_row_start_idx_i, \
-                    ref_tile_col_start_idx_i, \
-                    ref_tile_row_start_idx_i + curr_align_i.first, \
-                    ref_tile_col_start_idx_i + curr_align_i.second );
+                // Container for nbr alignment pair
+                std::vector<std::pair<int, int>> nbrs_align_i; 
 
-                for ( const auto& nbr_align_i : nbrs_align_i )
+                // Consider 4 neighbour's alignment
+                // Only compute distance if alignment is different
+                if ( tile_col_i > 0 )
                 {
-                    auto nbr_align_i_distance = distance_func_ptr(
+                    const auto& nbr1_align_i = upsampled_alignment[ tile_row_i + 0 ][ tile_col_i - 1 ];
+                    if ( curr_align_i != nbr1_align_i ) nbrs_align_i.emplace_back( nbr1_align_i );
+                }
+
+                if ( tile_col_i < num_tiles_w - 1 )
+                {
+                    const auto& nbr2_align_i = upsampled_alignment[ tile_row_i + 0 ][ tile_col_i + 1 ];
+                    if ( curr_align_i != nbr2_align_i ) nbrs_align_i.emplace_back( nbr2_align_i );
+                }
+
+                if ( tile_row_i > 0 )
+                {
+                    const auto& nbr3_align_i = upsampled_alignment[ tile_row_i - 1 ][ tile_col_i + 0 ];
+                    if ( curr_align_i != nbr3_align_i ) nbrs_align_i.emplace_back( nbr3_align_i );
+                }
+
+                if ( tile_row_i < num_tiles_h - 1 )
+                {
+                    const auto& nbr4_align_i = upsampled_alignment[ tile_row_i + 1 ][ tile_col_i + 0 ];
+                    if ( curr_align_i != nbr4_align_i ) nbrs_align_i.emplace_back( nbr4_align_i );
+                }
+
+                // If there is a nbr alignment that need to be considered. Compute distance
+                if ( ! nbrs_align_i.empty() )
+                {
+                    int ref_tile_row_start_idx_i = tile_row_i * tile_size / 2;
+                    int ref_tile_col_start_idx_i = tile_col_i * tile_size / 2;
+
+                    // curr_align_i's distance
+                    auto curr_align_i_distance = distance_func_ptr(
                         ref_img, alt_img, \
                         ref_tile_row_start_idx_i, \
                         ref_tile_col_start_idx_i, \
-                        ref_tile_row_start_idx_i + nbr_align_i.first, \
-                        ref_tile_col_start_idx_i + nbr_align_i.second );
-                    
-                    if ( nbr_align_i_distance < curr_align_i_distance )
+                        ref_tile_row_start_idx_i + curr_align_i.first, \
+                        ref_tile_col_start_idx_i + curr_align_i.second );
+
+                    for ( const auto& nbr_align_i : nbrs_align_i )
                     {
-                        printf("tile [%d, %d] update align, prev align (%d, %d) curr align (%d, %d), prev distance %d curr distance %d\n", \
-                            tile_row_i, tile_col_i, \
-                            curr_align_i.first, curr_align_i.second, \
-                            nbr_align_i.first, nbr_align_i.second, \
-                            int(curr_align_i_distance), int(nbr_align_i_distance) );
+                        auto nbr_align_i_distance = distance_func_ptr(
+                            ref_img, alt_img, \
+                            ref_tile_row_start_idx_i, \
+                            ref_tile_col_start_idx_i, \
+                            ref_tile_row_start_idx_i + nbr_align_i.first, \
+                            ref_tile_col_start_idx_i + nbr_align_i.second );
+                        
+                        if ( nbr_align_i_distance < curr_align_i_distance )
+                        {
+                            #ifdef NDEBUG
+                            printf("tile [%d, %d] update align, prev align (%d, %d) curr align (%d, %d), prev distance %d curr distance %d\n", \
+                                tile_row_i, tile_col_i, \
+                                curr_align_i.first, curr_align_i.second, \
+                                nbr_align_i.first, nbr_align_i.second, \
+                                int(curr_align_i_distance), int(nbr_align_i_distance) );
+                            #endif
 
-                        dst_alignment[ tile_row_i ][ tile_col_i ] = nbr_align_i;
-                        curr_align_i_distance = nbr_align_i_distance;                        
+                            dst_alignment[ tile_row_i ][ tile_col_i ] = nbr_align_i;
+                            curr_align_i_distance = nbr_align_i_distance;                        
+                        }
                     }
-
                 }
             }
-        }
+        }        
+
     }
-
-    // Border part of the loop
-    // TOP
-    // {
-    //     int tile_row_i = 0;
-    //     for ( int tile_col_i = 1; tile_col_i < num_tiles_w - 1; ++tile_col_i )
-    //     {
-
-    //     }
-    // }
-
-    // TOP LEFT corner
-
-    // RIGHT
-
-    // TOP RIGHT corner
-
-    // LEFT
-
-    // BOTTOM LEFT corner
-
-    // BOTTOM
-
-    // BOTTOM RIGHT CORNER
-
-
-} // end of build_alignment_consider_neighbour
+}
 
 
 // Set tilesize as template argument for better compiler optimization result.
@@ -507,16 +482,41 @@ void align_image_level( \
     }
 
     // Every level share the same upsample function
-    void (*upsample_alignment_func_ptr)(std::vector<std::vector<std::pair<int, int>>>&, std::vector<std::vector<std::pair<int, int>>>&, int, int) = nullptr;
+    void (*upsample_alignment_func_ptr)(const std::vector<std::vector<std::pair<int, int>>>&, \
+                                        std::vector<std::vector<std::pair<int, int>>>&, \
+                                        int, int, const cv::Mat&, const cv::Mat&, bool) = nullptr;
     if ( scale_factor_prev_curr == 2 )
     {
         if ( curr_tile_size / prev_tile_size == 2 )
         {
-            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 2>;
+            if ( curr_tile_size == 8 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 2, 8>;                
+            }
+            else if ( curr_tile_size == 16 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 2, 16>;                
+            }
+            else
+            {
+                throw std::runtime_error("Something wrong with upsampling function setting\n");
+            }
+
         }
         else if ( curr_tile_size / prev_tile_size == 1 )
         {
-            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 1>;
+            if ( curr_tile_size == 8 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 1, 8>;                
+            }
+            else if ( curr_tile_size == 16 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<2, 1, 16>;                
+            }
+            else
+            {
+                throw std::runtime_error("Something wrong with upsampling function setting\n");
+            }
         }
         else
         {
@@ -527,17 +527,41 @@ void align_image_level( \
     {
         if ( curr_tile_size / prev_tile_size == 2 )
         {
-            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 2>;
+            if ( curr_tile_size == 8 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 2, 8>;                
+            }
+            else if ( curr_tile_size == 16 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 2, 16>;                
+            }
+            else
+            {
+                throw std::runtime_error("Something wrong with upsampling function setting\n");
+            }
+
         }
         else if ( curr_tile_size / prev_tile_size == 1 )
         {
-            upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 1>;
+            if ( curr_tile_size == 8 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 1, 8>;                
+            }
+            else if ( curr_tile_size == 16 )
+            {
+                upsample_alignment_func_ptr = &build_upsampled_prev_aligement<4, 1, 16>;                
+            }
+            else
+            {
+                throw std::runtime_error("Something wrong with upsampling function setting\n");
+            }
         }
         else
         {
             throw std::runtime_error("Something wrong with upsampling function setting\n");
         }
     }
+
 
     // Function to extract reference image tile for memory cache
     cv::Mat (*extract_ref_img_tile)(const cv::Mat&, int, int) = nullptr;
@@ -591,14 +615,13 @@ void align_image_level( \
     // Upsample previous level alignment 
     else
     {
-        std::vector<std::vector<std::pair<int, int>>> upsampled_prev_aligement_tmp;
-        upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement_tmp, num_tiles_h, num_tiles_w );
-        alignment_nbr_func_ptr( upsampled_prev_aligement_tmp, upsampled_prev_aligement, ref_img, alt_img );
+        upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement, \
+            num_tiles_h, num_tiles_w, ref_img, alt_img, false );
 
         printf("\n!!!!!Upsampled previous alignment\n");
-        for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
+        for ( int tile_row = 0; tile_row < int(upsampled_prev_aligement.size()); tile_row++ )
         {
-            for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
+            for ( int tile_col = 0; tile_col < int(upsampled_prev_aligement.at(0).size()); tile_col++ )
             {
                 const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
                 printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
@@ -729,25 +752,25 @@ void align_image_level( \
                     }
 
                     // If same value, choose the one closer to the original tile location
-                    if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
-                    {
-                        int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
-                        int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
-                        int curr_distance_row_2_ref = search_row_j - search_radiou;
-                        int curr_distance_col_2_ref = search_col_j - search_radiou;
+                    // if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
+                    // {
+                    //     int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
+                    //     int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
+                    //     int curr_distance_row_2_ref = search_row_j - search_radiou;
+                    //     int curr_distance_col_2_ref = search_col_j - search_radiou;
 
-                        int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
-                        int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
+                    //     int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
+                    //     int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
 
-                        // previous min distance idx is farther away from ref tile start location
-                        if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
-                        {
-                            // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
-                            //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
-                            min_distance_col_i = search_col_j;
-                            min_distance_row_i = search_row_j;
-                        }
-                    }
+                    //     // previous min distance idx is farther away from ref tile start location
+                    //     if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
+                    //     {
+                    //         // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
+                    //         //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
+                    //         min_distance_col_i = search_col_j;
+                    //         min_distance_row_i = search_row_j;
+                    //     }
+                    // }
                 }
             }
 
@@ -765,26 +788,26 @@ void align_image_level( \
         }
     }
 
-    // printf("\n!!!!!Min distance for each tile \n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
-    //     {
-    //         printf("tile (%d, %d) distance %u\n", \
-    //             tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
-    //     }
-    // }
+    printf("\n!!!!!Min distance for each tile \n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
+        {
+            printf("tile (%d, %d) distance %u\n", \
+                tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
+        }
+    }
 
-    // printf("\n!!!!!Alignment at current level\n");
-    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    // {
-    //     for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
-    //     {
-    //         const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
-    //         printf("tile (%d, %d) -> start idx (%d, %d)\n", \
-    //             tile_row, tile_col, tile_start.first, tile_start.second);
-    //     }
-    // }
+    printf("\n!!!!!Alignment at current level\n");
+    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    {
+        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+        {
+            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+                tile_row, tile_col, tile_start.first, tile_start.second);
+        }
+    }
 
 }
 
