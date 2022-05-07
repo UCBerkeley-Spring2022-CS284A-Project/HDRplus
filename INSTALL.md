@@ -1,40 +1,30 @@
 
 ## Step by step installation
 
-1. [OpenCV](git@github.com:opencv/opencv.git) v3.4.0 build from source through CMake
-   1. v4.x+ version have some MacOS compatable issue
-   2. v4.x+ version work on Ubuntu
+Platform: Ubuntu 20.x
+
+1. [OpenCV](git@github.com:opencv/opencv.git) v4.x+ recommended
+   `sudo apt install libopencv-dev`
 
 
-2. LibRaw
-   1. MacOS : `brew install libraw libpng libjpeg`
-   2. Ubuntu : `sudo apt install libraw-dev`
+2. LibRaw: install from source is recommended
+
+   step 1: download libraw package here: https://www.libraw.org/download
    
-      step 1: download libraw package here: https://www.libraw.org/download
-      
-      step 2: extract the pkg using `tar xzvf LibRaw-X.YY.tar.gz`
-      
-      step 3: 
-      ```shell
-         cd LibRaw-X.YY
-	      autoreconf -f -i
-         ./configure # with optional args
-         make
-      ```
-               
-      step 4: `sudo make install`
-      
-      step 5: change the target_link_libraries in cmakelist file to the following:
-      
-      ```shell
-      target_link_libraries(${PROJECT_NAME} 
-              ${OpenCV_LIBS}
-              ${LIBRAW_LIBRARY})
-              ```
+   step 2: extract the pkg using `tar xzvf LibRaw-X.YY.tar.gz`
+   
+   step 3: 
+   ```shell
+      cd LibRaw-X.YY
+      autoreconf -f -i
+      ./configure # with optional args
+      make -j 10
+   ```
 
-3. Install `exiv2`
-   1. MacOS : `brew install exiv2` & `brew install libssh` 
-   2. Ubuntu : `apt install libexiv2-dev`
+   step 4: `sudo make install`
+   
+
+3. Install `exiv2` : `apt install libexiv2-dev`
 
 
 4. Run CMake to build
