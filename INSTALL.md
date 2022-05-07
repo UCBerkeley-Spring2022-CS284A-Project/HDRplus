@@ -17,6 +17,7 @@
       step 3: 
       ```shell
          cd LibRaw-X.YY
+	      autoreconf -f -i
          ./configure # with optional args
          make
       ```

@@ -24,7 +24,7 @@ namespace hdrplus
 
         // Get raw channels
         std::vector<cv::Mat> channels(4);
-        hdrplus::extract_rgb_fmom_bayer<uint16_t>(reference_image, channels[0], channels[2], channels[1], channels[3]);
+        hdrplus::extract_rgb_from_bayer<uint16_t>(reference_image, channels[0], channels[1], channels[2], channels[3]);
 
         std::vector<cv::Mat> processed_channels(4);
         // For each channel, perform denoising and merge
@@ -44,7 +44,7 @@ namespace hdrplus
                     //get alternate image
                     cv::Mat alt_image = burst_images.bayer_images_pad[j];
                     std::vector<cv::Mat> alt_channels(4);
-                    hdrplus::extract_rgb_fmom_bayer<uint16_t>(alt_image, alt_channels[0], alt_channels[1], alt_channels[2], alt_channels[3]);
+                    hdrplus::extract_rgb_from_bayer<uint16_t>(alt_image, alt_channels[0], alt_channels[1], alt_channels[2], alt_channels[3]);
 
                     alternate_channel_i_list.push_back(alt_channels[i]);
                 }

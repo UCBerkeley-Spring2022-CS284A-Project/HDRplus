@@ -6,8 +6,8 @@ project(hdrplus)
 # set c++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wall")
 
 # make sure we use Release and warn otherwise
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -37,6 +37,9 @@ message(STATUS "Found LIBRAW_LIBRARY to be ${LIBRAW_LIBRARY}" )
 find_package(exiv2 REQUIRED CONFIG NAMES exiv2)
 message(STATUS "Found Exiv2 and linked")
 
+# OpenMP
+find_package(OpenMP REQUIRED)
+
 # library
 include_directories( include )
 
@@ -60,7 +63,8 @@ add_library(${PROJECT_NAME} SHARED ${src_files} )
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${OpenCV_LIBS}
   ${LIBRAW_LIBRARY}
-  exiv2lib )
+  exiv2lib
+  OpenMP::OpenMP_CXX )
 
 # example
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin )

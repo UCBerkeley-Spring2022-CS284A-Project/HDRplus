@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <omp.h>
 #include <opencv2/opencv.hpp> // all opencv header
 #include "hdrplus/burst.h"
 #include "hdrplus/utility.h"
@@ -30,7 +31,7 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
     // Find reference image path in input directory
     // reference image path need to be absolute path
     reference_image_idx = -1;
-    for ( int i = 0; i < bayer_image_paths.size(); ++i )
+    for ( size_t i = 0; i < bayer_image_paths.size(); ++i )
     {
         if ( bayer_image_paths[ i ] == reference_image_path )
         {
@@ -85,7 +86,7 @@ burst::burst( const std::string& burst_path, const std::string& reference_image_
         // cv::Mat use internal reference count
         bayer_images_pad.emplace_back( bayer_image_pad_i );
         grayscale_images_pad.emplace_back( box_filter_kxk<uint16_t, 2>( bayer_image_pad_i ) );
-    } 
+    }
 
     #ifndef NDEBUG
     printf("%s::%s Pad bayer image from (%d, %d) -> (%d, %d)\n", \
