@@ -44,7 +44,6 @@ static void build_per_grayimg_pyramid( \
             downsample_image = src_image;
             break;
         case 2:
-            //printf("downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
             // // Gaussian blur
             cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
         
@@ -57,9 +56,10 @@ static void build_per_grayimg_pyramid( \
 
             break;
         case 4:
-            printf("downsample with gaussian sigma %.2f", inv_scale_factors[ i ] * 0.5 );
             cv::GaussianBlur( images_pyramid.at( i-1 ), blur_image, cv::Size(0, 0), inv_scale_factors[ i ] * 0.5 );
+            
             downsample_image = downsample_nearest_neighbour<uint16_t, 4>( blur_image );
+            
             //downsample_image = downsample_nearest_neighbour<uint16_t, 4>( images_pyramid.at( i-1 ) );
             images_pyramid.at( i ) = downsample_image.clone();
             break;
@@ -98,7 +98,7 @@ static void build_upsampled_prev_aligement( \
     dst_alignment.resize( num_tiles_h, std::vector<std::pair<int, int>>( num_tiles_w, std::pair<int, int>(0, 0) ) );
 
     // Upsample alignment
-    // #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for ( int row_i = 0; row_i < src_height; row_i++ )
     {
         for ( int col_i = 0; col_i < src_width; col_i++ )
@@ -425,16 +425,16 @@ void align_image_level( \
     {
         upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement, num_tiles_h, num_tiles_w );
 
-        printf("\n!!!!!Upsampled previous alignment\n");
-        for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
-        {
-            for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
-            {
-                const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
-                printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
-                    tile_row, tile_col, tile_start.first, tile_start.second);
-            }
-        }
+        // printf("\n!!!!!Upsampled previous alignment\n");
+        // for ( int tile_row = 0; tile_row < upsampled_prev_aligement.size(); tile_row++ )
+        // {
+        //     for ( int tile_col = 0; tile_col < upsampled_prev_aligement.at(0).size(); tile_col++ )
+        //     {
+        //         const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
+        //         printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
+        //             tile_row, tile_col, tile_start.first, tile_start.second);
+        //     }
+        // }
 
     }
 
@@ -472,7 +472,7 @@ void align_image_level( \
     std::vector<std::vector<uint16_t>> distances( num_tiles_h, std::vector<uint16_t>( num_tiles_w, 0 ));
 
     /* Iterate through all reference tile & compute distance */
-    // #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for ( int ref_tile_row_i = 0; ref_tile_row_i < num_tiles_h; ref_tile_row_i++ )
     {
         for ( int ref_tile_col_i = 0; ref_tile_col_i < num_tiles_w; ref_tile_col_i++ )
@@ -559,25 +559,25 @@ void align_image_level( \
                     }
 
                     // If same value, choose the one closer to the original tile location
-                    // if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
-                    // {
-                    //     int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
-                    //     int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
-                    //     int curr_distance_row_2_ref = search_row_j - search_radiou;
-                    //     int curr_distance_col_2_ref = search_col_j - search_radiou;
+                    if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
+                    {
+                        int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
+                        int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
+                        int curr_distance_row_2_ref = search_row_j - search_radiou;
+                        int curr_distance_col_2_ref = search_col_j - search_radiou;
 
-                    //     int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
-                    //     int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
+                        int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
+                        int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
 
-                    //     // previous min distance idx is farther away from ref tile start location
-                    //     if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
-                    //     {
-                    //         // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
-                    //         //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
-                    //         min_distance_col_i = search_col_j;
-                    //         min_distance_row_i = search_row_j;
-                    //     }
-                    // }
+                        // previous min distance idx is farther away from ref tile start location
+                        if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
+                        {
+                            // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
+                            //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
+                            min_distance_col_i = search_col_j;
+                            min_distance_row_i = search_row_j;
+                        }
+                    }
                 }
             }
 
@@ -595,26 +595,26 @@ void align_image_level( \
         }
     }
 
-    printf("\n!!!!!Min distance for each tile \n");
-    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    {
-        for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
-        {
-            printf("tile (%d, %d) distance %u\n", \
-                tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
-        }
-    }
+    // printf("\n!!!!!Min distance for each tile \n");
+    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    // {
+    //     for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
+    //     {
+    //         printf("tile (%d, %d) distance %u\n", \
+    //             tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
+    //     }
+    // }
 
-    printf("\n!!!!!Alignment at current level\n");
-    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    {
-        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
-        {
-            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
-            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
-                tile_row, tile_col, tile_start.first, tile_start.second);
-        }
-    }
+    // printf("\n!!!!!Alignment at current level\n");
+    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    // {
+    //     for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+    //     {
+    //         const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+    //         printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+    //             tile_row, tile_col, tile_start.first, tile_start.second);
+    //     }
+    // }
 
 }
 
@@ -643,7 +643,7 @@ void align::process( const hdrplus::burst& burst_images, \
 
     per_grayimg_pyramid.resize( burst_images.num_images );
 
-    // #pragma omp parallel for
+    #pragma omp parallel for
     for ( int img_idx = 0; img_idx < burst_images.num_images; ++img_idx )
     {
         // per_grayimg_pyramid[ img_idx ][ 0 ] is the original image
