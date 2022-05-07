@@ -613,16 +613,16 @@ void align_image_level( \
         upsample_alignment_func_ptr( prev_aligement, upsampled_prev_aligement, \
             num_tiles_h, num_tiles_w, ref_img, alt_img, false );
 
-        printf("\n!!!!!Upsampled previous alignment\n");
-        for ( int tile_row = 0; tile_row < int(upsampled_prev_aligement.size()); tile_row++ )
-        {
-            for ( int tile_col = 0; tile_col < int(upsampled_prev_aligement.at(0).size()); tile_col++ )
-            {
-                const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
-                printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
-                    tile_row, tile_col, tile_start.first, tile_start.second);
-            }
-        }
+        // printf("\n!!!!!Upsampled previous alignment\n");
+        // for ( int tile_row = 0; tile_row < int(upsampled_prev_aligement.size()); tile_row++ )
+        // {
+        //     for ( int tile_col = 0; tile_col < int(upsampled_prev_aligement.at(0).size()); tile_col++ )
+        //     {
+        //         const auto tile_start = upsampled_prev_aligement.at( tile_row ).at( tile_col );
+        //         printf("up tile (%d, %d) -> start idx (%d, %d)\n", \
+        //             tile_row, tile_col, tile_start.first, tile_start.second);
+        //     }
+        // }
 
     }
 
@@ -783,26 +783,26 @@ void align_image_level( \
         }
     }
 
-    printf("\n!!!!!Min distance for each tile \n");
-    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    {
-        for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
-        {
-            printf("tile (%d, %d) distance %u\n", \
-                tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
-        }
-    }
+    // printf("\n!!!!!Min distance for each tile \n");
+    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    // {
+    //     for ( int tile_col = 0; tile_col < num_tiles_w; ++tile_col )
+    //     {
+    //         printf("tile (%d, %d) distance %u\n", \
+    //             tile_row, tile_col, distances.at( tile_row).at(tile_col ) );
+    //     }
+    // }
 
-    printf("\n!!!!!Alignment at current level\n");
-    for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
-    {
-        for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
-        {
-            const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
-            printf("tile (%d, %d) -> start idx (%d, %d)\n", \
-                tile_row, tile_col, tile_start.first, tile_start.second);
-        }
-    }
+    // printf("\n!!!!!Alignment at current level\n");
+    // for ( int tile_row = 0; tile_row < num_tiles_h; tile_row++ )
+    // {
+    //     for ( int tile_col = 0; tile_col < num_tiles_w; tile_col++ )
+    //     {
+    //         const auto tile_start = curr_alignment.at( tile_row ).at( tile_col );
+    //         printf("tile (%d, %d) -> start idx (%d, %d)\n", \
+    //             tile_row, tile_col, tile_start.first, tile_start.second);
+    //     }
+    // }
 
 }
 
