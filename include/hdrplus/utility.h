@@ -116,19 +116,41 @@ void print_cvmat( cv::Mat image )
     int height = image.size().height;
     int width = image.size().width;
     int step = image.step1();
+    int chns = image.channels();
 
     printf("print_cvmat()::Image of size height = %d, width = %d, step = %d\n", \
         height, width, step );
 
-    for ( int row_i = 0; row_i < height; ++row_i )
+    if ( chns == 1 )
     {
-        int row_i_offset = row_i * step;
-        for ( int col_i = 0; col_i < width; ++col_i )
+        for ( int row_i = 0; row_i < height; ++row_i )
         {
-            printf("%3.d ", img_ptr[ row_i_offset + col_i ]);
-            //printf("%3.d ", int( image.at<T>( row_i, col_i ) ) );
-        }
-        printf("\n");
+            int row_i_offset = row_i * step;
+            for ( int col_i = 0; col_i < width; ++col_i )
+            {
+                printf("%3.d ", img_ptr[ row_i_offset + col_i ]);
+                //printf("%3.d ", int( image.at<T>( row_i, col_i ) ) );
+            }
+            printf("\n");
+        } 
+    }
+    else if ( chns == 3 )
+    {
+        for ( int row_i = 0; row_i < height; ++row_i )
+        {
+            int row_i_offset = row_i * step;
+            for ( int col_i = 0; col_i < width; ++col_i )
+            {
+                printf("[%3.d, %3.d, %3.d] ", img_ptr[ row_i_offset + col_i * 3 + 0 ], \
+                                               img_ptr[ row_i_offset + col_i * 3 + 1 ], \
+                                               img_ptr[ row_i_offset + col_i * 3 + 2 ] );
+            }
+            printf("\n");
+        } 
+    }
+    else
+    {
+        throw std::runtime_error("cv::Mat number of channel currently not support to print\n");
     }
 }
 
@@ -193,6 +215,52 @@ void extract_rgb_from_bayer( const cv::Mat& bayer_img, \
     }
 }
 
+
+/**
+ * @brief Convert RGB image to gray image through same weight linear combination.
+ *        Also support implicit data type conversion.
+ * 
+ * @tparam RGB_DTYPE rgb image type (e.g. uint16_t)
+ * @tparam GRAY_DTYPE gray image type (e.g. uint16_t)
+ * @tparam GRAY_CVTYPE opencv gray image type
+ */
+template< typename RGB_DTYPE, typename GRAY_DTYPE, int GRAY_CVTYPE >
+cv::Mat rgb_2_gray( const cv::Mat& rgb_img )
+{
+    const RGB_DTYPE* rgb_img_ptr = (const RGB_DTYPE*)rgb_img.data;
+    int img_width = rgb_img.size().width;
+    int img_height = rgb_img.size().height;
+    int rgb_img_step = rgb_img.step1();
+
+    // Create output gray cv::Mat
+    cv::Mat gray_img( img_height, img_width, GRAY_CVTYPE );
+    GRAY_DTYPE* gray_img_ptr = (GRAY_DTYPE*)gray_img.data;
+    int gray_img_step = gray_img.step1();
+
+    #pragma omp parallel for
+    for ( int row_i = 0; row_i < img_height; row_i++ )
+    {
+        int rgb_row_i_offset = row_i * rgb_img_step;
+        int gray_row_i_offset = row_i * gray_img_step;
+
+        UNROLL_LOOP( 32 ) // multiplier of cache line size
+        for ( int col_j = 0; col_j < img_width; col_j++ )
+        {   
+            GRAY_DTYPE avg_ij(0);
+
+            avg_ij += rgb_img_ptr[ rgb_row_i_offset + (col_j * 3 + 0) ];
+            avg_ij += rgb_img_ptr[ rgb_row_i_offset + (col_j * 3 + 1) ];
+            avg_ij += rgb_img_ptr[ rgb_row_i_offset + (col_j * 3 + 2) ];
+
+            avg_ij /= 3;
+
+            gray_img_ptr[ gray_row_i_offset + col_j ] = avg_ij;
+        }
+    }
+
+    // OpenCV use reference count. Thus return won't create deep copy
+    return gray_img;
+}
 
 
 template <typename T>

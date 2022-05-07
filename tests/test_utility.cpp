@@ -108,11 +108,41 @@ void test_extract_rgb_from_bayer()
 }
 
 
+void test_rgb_2_gray()
+{
+    printf("\n###Test test_rgb_2_gray()###\n");
+    // Intialize input data
+    int img_width = 10;
+    int img_height = 14;
+    int img_chns = 3;
+    std::vector<uint16_t> rgb_data( img_width * img_height * img_chns );
+
+    for ( int i = 0; i < img_width * img_height * img_chns; ++i )
+    {
+        rgb_data[ i ] = i+1;
+    }
+
+    // Create input cv::mat
+    cv::Mat rgb_img = cv::Mat( img_height, img_width, CV_16UC3, rgb_data.data() );
+
+    printf("\nrgb cv::Mat is \n");
+    hdrplus::print_cvmat<uint16_t>( rgb_img );
+
+    cv::Mat gray_img = hdrplus::rgb_2_gray<uint16_t, uint16_t, CV_16U>( rgb_img );
+
+    printf("\nGray cv::Mat is \n");
+    hdrplus::print_cvmat<uint16_t>( gray_img );
+
+    printf("test_rgb_2_gray finish\n"); fflush(stdout);
+}
+
+
 int main()
 {
-    test_downsample_nearest_neighbour();
-    test_box_filter_kxk();
-    test_extract_rgb_from_bayer();
+    //test_downsample_nearest_neighbour();
+    //test_box_filter_kxk();
+    //test_extract_rgb_from_bayer();
+    test_rgb_2_gray();
 
     printf("\ntest_utility finish\n");
 }
