@@ -20,18 +20,13 @@ static void build_per_grayimg_pyramid( \
     const std::vector<int>& inv_scale_factors );
 
 
-template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr >
+template< int pyramid_scale_factor_prev_curr, int tilesize_scale_factor_prev_curr, int tile_size >
 static void build_upsampled_prev_aligement( \
-    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
-    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
-    int num_tiles_h, int num_tiles_w );
-
-
-template< int tile_size >
-static void build_alignment_consider_neighbour( \
-    std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
-    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, 
-    const cv::Mat& ref_img, const cv::Mat& alt_img );
+    const std::vector<std::vector<std::pair<int, int>>>& src_alignment, \
+    std::vector<std::vector<std::pair<int, int>>>& dst_alignment, \
+    int num_tiles_h, int num_tiles_w, \
+    const cv::Mat& ref_img, const cv::Mat& alt_img, \
+    bool consider_nbr = false );
 
 
 template< typename data_type, typename return_type, int tile_size >
@@ -129,7 +124,7 @@ static void build_upsampled_prev_aligement( \
     std::vector<std::vector<std::pair<int, int>>>& dst_alignment, \
     int num_tiles_h, int num_tiles_w, \
     const cv::Mat& ref_img, const cv::Mat& alt_img, \
-    bool consider_nbr = false )
+    bool consider_nbr )
 {
     int src_num_tiles_h = src_alignment.size();
     int src_num_tiles_w = src_alignment[ 0 ].size();
@@ -752,25 +747,25 @@ void align_image_level( \
                     }
 
                     // If same value, choose the one closer to the original tile location
-                    // if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
-                    // {
-                    //     int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
-                    //     int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
-                    //     int curr_distance_row_2_ref = search_row_j - search_radiou;
-                    //     int curr_distance_col_2_ref = search_col_j - search_radiou;
+                    if ( distance_j == min_distance_i && min_distance_row_i != -1 && min_distance_col_i != -1 )
+                    {
+                        int prev_distance_row_2_ref = min_distance_row_i - search_radiou;
+                        int prev_distance_col_2_ref = min_distance_col_i - search_radiou;
+                        int curr_distance_row_2_ref = search_row_j - search_radiou;
+                        int curr_distance_col_2_ref = search_col_j - search_radiou;
 
-                    //     int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
-                    //     int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
+                        int prev_distance_2_ref_sqr = prev_distance_row_2_ref * prev_distance_row_2_ref + prev_distance_col_2_ref * prev_distance_col_2_ref;
+                        int curr_distance_2_ref_sqr = curr_distance_row_2_ref * curr_distance_row_2_ref + curr_distance_col_2_ref * curr_distance_col_2_ref;
 
-                    //     // previous min distance idx is farther away from ref tile start location
-                    //     if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
-                    //     {
-                    //         // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
-                    //         //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
-                    //         min_distance_col_i = search_col_j;
-                    //         min_distance_row_i = search_row_j;
-                    //     }
-                    // }
+                        // previous min distance idx is farther away from ref tile start location
+                        if ( prev_distance_2_ref_sqr > curr_distance_2_ref_sqr )
+                        {
+                            // printf("@@@ Same distance %d, choose closer one (%d, %d) instead of (%d, %d)\n", \
+                            //     distance_j, search_row_j, search_col_j, min_distance_row_i, min_distance_col_i);
+                            min_distance_col_i = search_col_j;
+                            min_distance_row_i = search_row_j;
+                        }
+                    }
                 }
             }
 
@@ -899,9 +894,6 @@ void align::process( const hdrplus::burst& burst_images, \
            
             // printf("@@@Alignment at level %d is h=%d, w=%d", level_i, curr_alignment.size(), curr_alignment.at(0).size() );
 
-            // Stop at second iteration
-            if ( level_i == num_levels - 2 )
-                break;
 
         } // for pyramid level
 
