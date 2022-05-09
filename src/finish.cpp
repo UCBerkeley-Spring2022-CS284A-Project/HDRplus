@@ -318,7 +318,7 @@ namespace hdrplus
          cv::Mat& longg, cv::Mat& fusedg, int& gain){
         std::cout<<"HDR Tone Mapping..."<<std::endl;
         // # Work with grayscale images
-        cv::Mat shortGray = mean_(mergedImage);
+        cv::Mat shortGray = rgb_2_gray<uint16_t, uint16_t, CV_16U>(mergedImage); //mean_(mergedImage);
         std::cout<<"--- Compute grayscale image"<<std::endl;
 
         // compute gain
@@ -565,11 +565,13 @@ namespace hdrplus
         // this->burstPath = burstPath;
         // std::cout<<"processMerged:"<<std::endl;
         // show20_20(mergedB);
+        
         // this->mergedBayer = processMergedMat(mergedB,CV_16UC1);//loadFromCSV("merged.csv", CV_16UC1);
         // std::cout<<"processMerged:"<<std::endl;
         // show20_20(this->mergedBayer);
         this->mergedBayer = loadFromCSV("merged.csv", CV_16UC1);
-        std::cout<<"csv:"<<std::endl;
+
+        // std::cout<<"csv:"<<std::endl;
         // show20_20(this->mergedBayer);
         // load_rawPathList(burstPath);
 
@@ -577,7 +579,7 @@ namespace hdrplus
 
 // read in ref img
         // bayer_image* ref = new bayer_image(rawPathList[refIdx]);
-        bayer_image* ref = new bayer_image(burst_images.bayer_images[this->refIdx]);
+        bayer_image* ref = new bayer_image(burst_images.bayer_images[burst_images.reference_image_idx]);
         cv::Mat processedRefImage = postprocess(ref->libraw_processor,params.rawpyArgs);
 
         std::cout<<"size ref: "<<processedRefImage.rows<<"*"<<processedRefImage.cols<<std::endl;
