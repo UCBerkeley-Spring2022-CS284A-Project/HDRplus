@@ -1,6 +1,6 @@
 #include <opencv2/opencv.hpp> // all opencv header
-// #include <opencv2/photo.hpp>
 #include "hdrplus/finish.h"
+#include "hdrplus/utility.h"
 #include <cmath>
 
 // #include <type_traits>
