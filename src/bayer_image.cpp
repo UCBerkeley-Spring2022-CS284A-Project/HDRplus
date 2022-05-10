@@ -58,7 +58,7 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     raw_image = cv::Mat( height, width, CV_16U, libraw_processor->imgdata.rawdata.raw_image ).clone(); // changed the order of width and height
 
     // Adding salt and pepper noise
-    cv::Mat saltpepper_noise = cv::Mat::zeros( raw_image.rows, raw_image.cols, CV_16UC3 );
+    cv::Mat saltpepper_noise = cv::Mat::zeros( raw_image.rows, raw_image.cols, CV_16U );
     cv::randu( saltpepper_noise, 0, 255 );
     cv::Mat black = saltpepper_noise < 5;
     cv::Mat white = saltpepper_noise > 250;
