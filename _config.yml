@@ -20,6 +20,8 @@ sass:
 
 nav:
  - name: "Milestone"
-   link: "/HDRplus/"
+   link: "/HDRplus/milestone"
  - name: "Proposal"
    link: "/HDRplus/proposal"
+ - name: "Final"
+   link: "/HDRplus/"

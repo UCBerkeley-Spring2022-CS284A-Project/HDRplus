@@ -1,5 +1,5 @@
 ---
-title: Final Report
+title: Milestone Report
 layout: default
 ---
 
@@ -21,19 +21,15 @@ Siming Liu ([liusm220036@berkeley.edu](mailto:liusm220036@berkeley.edu))
 
 ---
 
-## Final Report
+## Milestone Report
 
-> TODO: change below links
-
-View as separate PDF file: [HDR Final Report](CS_184_284A_Final_Project_Milestone_HDR.pdf)
+View as separate PDF file: [HDR Milestone Report](CS_184_284A_Final_Project_Milestone_HDR.pdf)
 
 <iframe src="CS_184_284A_Final_Project_Milestone_HDR.pdf" width="100%" height="1000"></iframe>
 
 ---
 
-## Final Video
-
-> TODO: change below links
+## Milestone Video
 
 View at YouTube: [HDR Milestone Video](https://youtu.be/lYK3vGGD1II)
 
@@ -41,6 +37,13 @@ View at YouTube: [HDR Milestone Video](https://youtu.be/lYK3vGGD1II)
 
 ---
 
+## Milestone Slides
+
+View at Google Slides: [HDR Milestone Slides](https://docs.google.com/presentation/d/1qqvNpkDU73VUGD2vifNmQG8hGs0QnIM6pYYcJUwDR_I/edit?usp=sharing)
+
+The following embedding will only show the slides if you are logged into a Berkeley account.
+
+<iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRkj5amj5lBx9vuv9oOPslXLTrcsgQuFT19T22RNyDCPmMfCswGqMacS4Y-zx-KFb7Hk08QWB_YhdZT/embed?start=false&loop=false&delayms=3000" frameborder="0" width="100%" height="415" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
 
 ---
 
