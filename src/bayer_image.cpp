@@ -57,6 +57,17 @@ bayer_image::bayer_image( const std::string& bayer_image_path )
     // https://www.libraw.org/node/2141
     raw_image = cv::Mat( height, width, CV_16U, libraw_processor->imgdata.rawdata.raw_image ).clone(); // changed the order of width and height
 
+    // Adding salt and pepper noise
+    cv::Mat saltpepper_noise = cv::Mat::zeros( raw_image.rows, raw_image.cols, CV_16UC3 );
+    cv::randu( saltpepper_noise, 0, 255 );
+    cv::Mat black = saltpepper_noise < 5;
+    cv::Mat white = saltpepper_noise > 250;
+    cv::Mat saltpepper_raw_image = raw_image.clone();
+    saltpepper_raw_image.setTo(255,white);
+    saltpepper_raw_image.setTo(0,black);
+
+    raw_image = saltpepper_raw_image;
+
     // 2x2 box filter
     grayscale_image = box_filter_kxk<uint16_t, 2>( raw_image );
 
