@@ -33,11 +33,10 @@ View as separate PDF file: [HDR Final Report](CS_184_284A_Final_Project_Final_HD
 
 ## Final Video
 
-> TODO: change below links
 
-View at YouTube: [HDR Final Video](https://youtu.be/lYK3vGGD1II)
+View at YouTube: [HDR Final Video](https://youtu.be/KQXBR-o2z1w)
 
-<iframe width="100%" height="394" src="https://www.youtube.com/embed/lYK3vGGD1II" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="100%" height="394" src="https://youtu.be/KQXBR-o2z1w" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ---
 
